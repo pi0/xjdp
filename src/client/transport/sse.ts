@@ -91,6 +91,7 @@ export class SSETransport implements ClientTransport {
 
       for (const type of FRAME_TYPES) {
         this.eventSource.addEventListener(type, (event: MessageEvent) => {
+          if (!event.data) return;
           const frame: Frame = JSON.parse(event.data);
           this._emit(frame);
         });
