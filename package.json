@@ -23,12 +23,14 @@
     "lint": "oxlint . && oxfmt --check .",
     "prepack": "pnpm build",
     "xjdp": "node ./bin/xjdp.mjs",
+    "release": "changelogen --release && git push --follow-tags",
     "test": "pnpm lint && pnpm typecheck",
     "typecheck": "tsgo --noEmit --skipLibCheck"
   },
   "devDependencies": {
     "@types/node": "latest",
     "@typescript/native-preview": "latest",
+    "changelogen": "^0.6.2",
     "obuild": "latest",
     "oxfmt": "latest",
     "oxlint": "latest",
