@@ -55,8 +55,16 @@ export async function createTerminal({ el, url, key, fingerprint }) {
 
     const _show = kb.show.bind(kb);
     const _hide = kb.hide.bind(kb);
-    kb.show = () => { _show(); card?.classList.add("vkb-open"); fitAddon.fit(); };
-    kb.hide = () => { _hide(); card?.classList.remove("vkb-open"); fitAddon.fit(); };
+    kb.show = () => {
+      _show();
+      card?.classList.add("vkb-open");
+      fitAddon.fit();
+    };
+    kb.hide = () => {
+      _hide();
+      card?.classList.remove("vkb-open");
+      fitAddon.fit();
+    };
 
     document.body.appendChild(kb.el);
 

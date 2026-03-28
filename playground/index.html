@@ -144,18 +144,30 @@
       .tab.active {
         color: #ededed;
       }
-      .tab:nth-child(1).active { color: #61afef; }
-      .tab:nth-child(2).active { color: #e5c07b; }
-      .tab:nth-child(3).active { color: #c678dd; }
+      .tab:nth-child(1).active {
+        color: #61afef;
+      }
+      .tab:nth-child(2).active {
+        color: #e5c07b;
+      }
+      .tab:nth-child(3).active {
+        color: #c678dd;
+      }
       .tab-panel {
         display: none;
       }
       .tab-panel.active {
         display: block;
       }
-      .tab-panel:nth-child(4).active .cmd { border-color: #61afef44; }
-      .tab-panel:nth-child(5).active .cmd { border-color: #e5c07b44; }
-      .tab-panel:nth-child(6).active .code-block { border-color: #c678dd44; }
+      .tab-panel:nth-child(4).active .cmd {
+        border-color: #61afef44;
+      }
+      .tab-panel:nth-child(5).active .cmd {
+        border-color: #e5c07b44;
+      }
+      .tab-panel:nth-child(6).active .code-block {
+        border-color: #c678dd44;
+      }
       .label {
         color: #666;
         font-size: 0.75rem;
@@ -191,9 +203,15 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .cmd .hi-bin { color: #c678dd; }
-      .cmd .hi-flag { color: #61afef; }
-      .cmd .hi-val { color: #98c379; }
+      .cmd .hi-bin {
+        color: #c678dd;
+      }
+      .cmd .hi-flag {
+        color: #61afef;
+      }
+      .cmd .hi-val {
+        color: #98c379;
+      }
       .cmd button {
         background: transparent;
         border: 1px solid #333;
@@ -251,11 +269,21 @@
         color: #ededed;
         border-color: #ededed;
       }
-      .code-block .k { color: #c678dd; }
-      .code-block .s { color: #98c379; }
-      .code-block .c { color: #555; }
-      .code-block .f { color: #61afef; }
-      .code-block .v { color: #e5c07b; }
+      .code-block .k {
+        color: #c678dd;
+      }
+      .code-block .s {
+        color: #98c379;
+      }
+      .code-block .c {
+        color: #555;
+      }
+      .code-block .f {
+        color: #61afef;
+      }
+      .code-block .v {
+        color: #e5c07b;
+      }
     </style>
   </head>
   <body>
@@ -296,13 +324,7 @@
       <hr class="divider" />
       <div
         id="terminal"
-        style="
-          width: 100%;
-          flex: 1;
-          min-height: 0;
-          overflow: hidden;
-          border: 1px solid #1a1a1a;
-        "
+        style="width: 100%; flex: 1; min-height: 0; overflow: hidden; border: 1px solid #1a1a1a"
       ></div>
       <div class="bottom-section">
         <hr class="divider" />
@@ -324,15 +346,24 @@
           </div>
         </div>
         <div class="tab-panel">
-          <div class="code-block" id="code-snippet"><button onclick="copyCode(this, event)">Copy</button><span class="k">import</span> { RJDPClient, parseKey } <span class="k">from</span> <span class="s">"xjdp"</span>;
+          <div class="code-block" id="code-snippet">
+            <button onclick="copyCode(this, event)">Copy</button><span class="k">import</span> {
+            RJDPClient, parseKey } <span class="k">from</span> <span class="s">"xjdp"</span>;
 
-<span class="k">const</span> <span class="v">client</span> = <span class="k">await</span> RJDPClient.<span class="f">connect</span>(<span class="s">"{{ $URL }}"</span>, {
-  ...<span class="k">await</span> <span class="f">parseKey</span>(<span class="s">"{{ info.demoClientKey }}"</span>),
-  <span class="v">serverFingerprint</span>: <span class="s">"{{ info.serverFingerprint.slice(0, 4) }}"</span>,
-});
+            <span class="k">const</span> <span class="v">client</span> =
+            <span class="k">await</span> RJDPClient.<span class="f">connect</span>(<span class="s"
+              >"{{ $URL }}"</span
+            >, { ...<span class="k">await</span> <span class="f">parseKey</span>(<span class="s"
+              >"{{ info.demoClientKey }}"</span
+            >), <span class="v">serverFingerprint</span>:
+            <span class="s">"{{ info.serverFingerprint.slice(0, 4) }}"</span>, });
 
-<span class="k">const</span> <span class="v">result</span> = <span class="k">await</span> client.<span class="f">eval</span>(<span class="s">"1 + 1"</span>);
-console.<span class="f">log</span>(<span class="v">result</span>); <span class="c">// 2</span></div>
+            <span class="k">const</span> <span class="v">result</span> =
+            <span class="k">await</span> client.<span class="f">eval</span>(<span class="s"
+              >"1 + 1"</span
+            >); console.<span class="f">log</span>(<span class="v">result</span>);
+            <span class="c">// 2</span>
+          </div>
         </div>
         <div class="label" style="text-align: center; margin-top: 0.75rem">Server fingerprint</div>
         <div class="fingerprint">{{ info.serverFingerprint }}</div>
@@ -374,7 +405,10 @@ console.<span class="f">log</span>(<span class="v">result</span>); <span class="
       document.querySelectorAll(".cmd code").forEach((el) => {
         el.innerHTML = el.textContent
           .replace(/^(\S+)\s+(\S+)/, '<span class="hi-bin">$1 $2</span>')
-          .replace(/(-\w)\s+(\S+)/g, '<span class="hi-flag">$1</span> <span class="hi-val">$2</span>');
+          .replace(
+            /(-\w)\s+(\S+)/g,
+            '<span class="hi-flag">$1</span> <span class="hi-val">$2</span>',
+          );
       });
       document.querySelectorAll(".cmd").forEach((el) => {
         el.addEventListener("click", () => copy(el.querySelector("button")));

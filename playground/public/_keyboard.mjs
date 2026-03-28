@@ -1,10 +1,8 @@
 // Mobile virtual keyboard for xterm.js — powered by simple-keyboard
 // https://virtual-keyboard.js.org
 
-const CDN_CSS =
-  "https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/css/index.css";
-const CDN_JS =
-  "https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.js";
+const CDN_CSS = "https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/css/index.css";
+const CDN_JS = "https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.js";
 
 const STYLE = `
 .vkb { display:none; position:fixed; bottom:0; left:0; right:0; z-index:9999;
@@ -47,7 +45,7 @@ const LAYOUT = {
   num: [
     "1 2 3 4 5 6 7 8 9 0 {bksp}",
     "- / : ; ( ) $ & @ {enter}",
-    '{sym} " . , ? ! \' \\ | ~',
+    "{sym} \" . , ? ! ' \\ | ~",
     "{abc} {ctrl} {esc} {space} {tab}",
   ],
   sym: [
@@ -244,10 +242,7 @@ export async function createKeyboard(term) {
       visible = true;
       root.style.display = "block";
       requestAnimationFrame(() => {
-        document.documentElement.style.setProperty(
-          "--vkb-h",
-          root.offsetHeight + "px",
-        );
+        document.documentElement.style.setProperty("--vkb-h", root.offsetHeight + "px");
       });
     },
     hide() {

@@ -1,6 +1,5 @@
 # Changelog
 
-
 ## v0.0.2
 
 [compare changes](https://github.com/pi0/xjdp/compare/v0.0.1...v0.0.2)
@@ -17,4 +16,3 @@
 ### ❤️ Contributors
 
 - Pooya Parsa ([@pi0](https://github.com/pi0))
-
