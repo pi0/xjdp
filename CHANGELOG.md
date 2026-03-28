@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.4
+
+[compare changes](https://github.com/pi0/xjdp/compare/v0.0.3...v0.0.4)
+
+### 🩹 Fixes
+
+- Restore cwd for session ([627dd59](https://github.com/pi0/xjdp/commit/627dd59))
+
+### ❤️ Contributors
+
+- Pooya Parsa ([@pi0](https://github.com/pi0))
+
 ## v0.0.3
 
 [compare changes](https://github.com/pi0/xjdp/compare/v0.0.2...v0.0.3)
