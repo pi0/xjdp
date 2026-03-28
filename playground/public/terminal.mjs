@@ -7,7 +7,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 const XTERM_CSS = "https://esm.sh/@xterm/xterm@5/css/xterm.css";
 
 /** @param {{ el: HTMLElement, url: string, key: string, fingerprint: string, transport?: string }} opts */
-export async function createTerminal({ el, url, key, fingerprint, transport = "sse" }) {
+export async function createTerminal({ el, url, key, fingerprint, transport = "http" }) {
   // Inject xterm.js CSS
   if (!document.querySelector(`link[href="${XTERM_CSS}"]`)) {
     const link = document.createElement("link");
