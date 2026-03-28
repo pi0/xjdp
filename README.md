@@ -14,8 +14,8 @@ Eval, exec, and filesystem access to any running JavaScript server over HTTP —
 ## Demos
 
 - **Vercel:** https://xjdp.vercel.app/
-- **Netlify:** https://xjdp.netlify.app/
 - **Deno:** https://xjdp.pi0.deno.net/
+- **Netlify:** https://xjdp.netlify.app/?transport=http
 
 ## Quick Start
 
