@@ -12,6 +12,7 @@ const demoClientFp = await fingerprint(demoClientKeyPair.publicKey);
 const kv = useStorage("sessions");
 const rjdp = createServer({
   serverKeyPair,
+  transports: ["http"],
   storage: {
     async get(key) {
       return ((await kv.getItem(key)) as string) ?? undefined;
