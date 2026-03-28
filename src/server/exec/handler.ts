@@ -77,8 +77,17 @@ export function handleExec(
   // Signal non-interactive context so TTY-aware commands degrade gracefully
   mergedEnv.TERM = mergedEnv.TERM || "dumb";
 
+  // Detect shell metacharacters and wrap in sh -c
+  let spawnFile = file;
+  let spawnArgs = args ?? [];
+  const fullCmd = [file, ...spawnArgs].join(" ");
+  if (/[|&;<>`$(){}]/.test(fullCmd)) {
+    spawnFile = "sh";
+    spawnArgs = ["-c", fullCmd];
+  }
+
   const start = performance.now();
-  const proc = spawn(file, args ?? [], {
+  const proc = spawn(spawnFile, spawnArgs, {
     env: mergedEnv,
     cwd: cwd ?? process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],

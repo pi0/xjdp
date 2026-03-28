@@ -33,6 +33,11 @@ export function getDisplayCwd(): string {
   return cwd;
 }
 
+/** Resolve an arg: paths are resolved, flags are passed through */
+export function resolveArg(arg: string): string {
+  return arg.startsWith("-") ? arg : resolvePath(arg);
+}
+
 /** Resolve a path relative to the current remote cwd */
 export function resolvePath(path: string): string;
 export function resolvePath(path: string | undefined): string | undefined;
@@ -68,7 +73,11 @@ export async function handleCommand(input: string, client: RJDPClient, rl: Readl
       break;
 
     case "cat":
-      await handleFsRead(resolvePath(rest[0]), client);
+      if (rest.some((a) => a.startsWith("-")) || rest.length > 1) {
+        await handleExec(["cat", ...rest.map(resolveArg)], client);
+      } else {
+        await handleFsRead(resolvePath(rest[0]), client);
+      }
       break;
 
     case "write":
@@ -76,23 +85,43 @@ export async function handleCommand(input: string, client: RJDPClient, rl: Readl
       break;
 
     case "ls":
-      await handleFsList(resolvePath(rest[0]) ?? cwd, client);
+      if (rest.some((a) => a.startsWith("-"))) {
+        await handleExec(["ls", ...rest.map(resolveArg)], client);
+      } else {
+        await handleFsList(resolvePath(rest[0]) ?? cwd, client);
+      }
       break;
 
     case "stat":
-      await handleFsStat(resolvePath(rest[0]), client);
+      if (rest.some((a) => a.startsWith("-")) || rest.length > 1) {
+        await handleExec(["stat", ...rest.map(resolveArg)], client);
+      } else {
+        await handleFsStat(resolvePath(rest[0]), client);
+      }
       break;
 
     case "mkdir":
-      await handleFsMkdir(resolvePath(rest[0]), client);
+      if (rest.some((a) => a.startsWith("-")) || rest.length > 1) {
+        await handleExec(["mkdir", ...rest.map(resolveArg)], client);
+      } else {
+        await handleFsMkdir(resolvePath(rest[0]), client);
+      }
       break;
 
     case "rm":
-      await handleFsDelete(resolvePath(rest[0]), client);
+      if (rest.some((a) => a.startsWith("-")) || rest.length > 1) {
+        await handleExec(["rm", ...rest.map(resolveArg)], client);
+      } else {
+        await handleFsDelete(resolvePath(rest[0]), client);
+      }
       break;
 
     case "mv":
-      await handleFsRename(resolvePath(rest[0]), resolvePath(rest[1]), client);
+      if (rest.some((a) => a.startsWith("-")) || rest.length > 2) {
+        await handleExec(["mv", ...rest.map(resolveArg)], client);
+      } else {
+        await handleFsRename(resolvePath(rest[0]), resolvePath(rest[1]), client);
+      }
       break;
 
     case "exit":
