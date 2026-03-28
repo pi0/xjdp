@@ -1,0 +1,43 @@
+{
+  "name": "xjdp",
+  "version": "0.0.1",
+  "bin": {
+    "xjdp": "./bin/xjdp.mjs"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./client": "./dist/client/client.mjs",
+    "./server": "./dist/server/handler.mjs",
+    "./cli": "./dist/cli/index.mjs",
+    "./cli/web": "./dist/cli/web.mjs"
+  },
+  "scripts": {
+    "build": "obuild",
+    "dev": "cd playground && pnpm dev",
+    "fmt": "oxlint . --fix && oxfmt .",
+    "lint": "oxlint . && oxfmt --check .",
+    "prepack": "pnpm build",
+    "xjdp": "node ./bin/xjdp.mjs",
+    "test": "pnpm lint && pnpm typecheck",
+    "typecheck": "tsgo --noEmit --skipLibCheck"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@typescript/native-preview": "latest",
+    "obuild": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "srvx": "^0.11.13",
+    "typescript": "^6.0.2",
+    "vitest": "latest"
+  },
+  "resolutions": {
+    "xjdp": "link:."
+  },
+  "packageManager": "pnpm@10.28.2"
+}

@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XJDP Playground</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <script type="importmap">
+      {
+        "imports": {
+          "xjdp": "/dist/index.mjs",
+          "xjdp/cli": "/dist/cli/index.mjs",
+          "xjdp/cli/web": "/dist/cli/web.mjs",
+          "@xterm/xterm": "https://esm.sh/@xterm/xterm@5",
+          "@xterm/addon-fit": "https://esm.sh/@xterm/addon-fit@0.10",
+          "@xterm/addon-web-links": "https://esm.sh/@xterm/addon-web-links@0.11"
+        }
+      }
+    </script>
+    <style>
+      @font-face {
+        font-family: "Geist Pixel Square";
+        src: url("https://cdn.jsdelivr.net/npm/geist@1.7.0/dist/fonts/geist-pixel/GeistPixel-Square.woff2")
+          format("woff2");
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #000;
+        color: #ededed;
+        font-family: "Geist Pixel Square", monospace;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        padding: 2rem;
+      }
+      .card {
+        max-width: 720px;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        container-type: inline-size;
+      }
+      .banner {
+        font-family: monospace;
+        color: #ededed;
+        font-size: min(0.5rem, 1.7cqi);
+        line-height: 1.15;
+        margin: 0;
+        margin-bottom: 1.5rem;
+        text-align: left;
+        user-select: none;
+        overflow-x: auto;
+      }
+      @media (max-width: 480px) {
+        body {
+          padding: 1rem;
+          align-items: flex-start;
+        }
+        .banner {
+          font-size: min(0.35rem, 1.7cqi);
+          margin-bottom: 1rem;
+        }
+        .divider {
+          margin: 1rem 0;
+        }
+      }
+      .subtitle {
+        display: block;
+        color: #666;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-align: center;
+        margin-top: 0.75rem;
+        letter-spacing: 0.05em;
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .subtitle:hover {
+        color: #ededed;
+      }
+      .fingerprint {
+        font-family: "Geist Pixel Square", monospace;
+        font-size: 0.7rem;
+        color: #444;
+        text-align: center;
+        margin-top: 0.5rem;
+        user-select: all;
+      }
+      .divider {
+        border: none;
+        border-top: 1px solid #1a1a1a;
+        margin: 1.5rem 0;
+      }
+      .section {
+        margin-bottom: 0.75rem;
+      }
+      .tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 0.4rem;
+        padding-left: 0.125rem;
+      }
+      .tab {
+        background: none;
+        border: none;
+        color: #444;
+        cursor: pointer;
+        padding: 0;
+        font-family: "Geist Pixel Square", monospace;
+        font-size: 0.75rem;
+        font-weight: 500;
+        transition: color 0.15s;
+      }
+      .tab:hover {
+        color: #888;
+      }
+      .tab.active {
+        color: #ededed;
+      }
+      .tab-panel {
+        display: none;
+      }
+      .tab-panel.active {
+        display: block;
+      }
+      .label {
+        color: #666;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-bottom: 0.4rem;
+        padding-left: 0.125rem;
+      }
+      .cmd {
+        background: #0a0a0a;
+        border: 1px solid #1a1a1a;
+        border-radius: 8px;
+        padding: 0.65rem 0.85rem;
+        font-family: "Geist Pixel Square", monospace;
+        font-size: 0.8rem;
+        color: #ededed;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        word-break: break-all;
+        transition: border-color 0.2s;
+      }
+      .cmd {
+        cursor: pointer;
+      }
+      .cmd:hover {
+        border-color: #333;
+      }
+      .cmd code {
+        flex: 1;
+        user-select: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .cmd button {
+        background: transparent;
+        border: 1px solid #333;
+        border-radius: 6px;
+        color: #666;
+        cursor: pointer;
+        padding: 0.3rem 0.6rem;
+        font-family: "Geist Pixel Square", monospace;
+        font-size: 0.7rem;
+        font-weight: 500;
+        flex-shrink: 0;
+        transition: all 0.15s;
+      }
+      .cmd button:hover {
+        border-color: #555;
+        color: #ededed;
+      }
+      .cmd button.copied {
+        color: #ededed;
+        border-color: #ededed;
+      }
+    </style>
+  </head>
+  <body>
+    <script server>
+      const info = await serverFetch(new URL("_info", $URL)).then(res => res.json());
+    </script>
+    <div class="card">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="display: flex; align-items: center; gap: 0.5rem">
+          XJDP Playground
+          <button
+            id="music-toggle"
+            aria-label="Toggle music"
+            style="
+              background: transparent;
+              border: 1px solid #1a1a1a;
+              border-radius: 6px;
+              color: #444;
+              cursor: pointer;
+              padding: 0.3rem 0.6rem;
+              font-family: &quot;Geist Pixel Square&quot;, monospace;
+              font-size: 0.7rem;
+              transition: all 0.2s;
+            "
+          >
+            &#9654;
+          </button>
+        </div>
+        <a
+          class="subtitle"
+          href="https://github.com/pi0/xjdp"
+          target="_blank"
+          rel="noopener"
+          style="margin-top: 0"
+          >pi0/xjdp &rarr;</a
+        >
+      </div>
+      <hr class="divider" />
+      <div
+        id="terminal"
+        style="
+          width: 100%;
+          flex: 1;
+          min-height: 0;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #1a1a1a;
+        "
+      ></div>
+      <hr class="divider" />
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab(0)">Full access (demo)</button>
+        <button class="tab" onclick="switchTab(1)">Read-only</button>
+      </div>
+      <div class="tab-panel active">
+        <div class="cmd">
+          <code>{{ info.cmdFull }}</code>
+          <button onclick="copy(this, event)">Copy</button>
+        </div>
+      </div>
+      <div class="tab-panel">
+        <div class="cmd">
+          <code>{{ info.cmdReadonly }}</code>
+          <button onclick="copy(this, event)">Copy</button>
+        </div>
+      </div>
+      <div class="label" style="text-align: center; margin-top: 0.75rem">Server fingerprint</div>
+      <div class="fingerprint">{{ info.serverFingerprint }}</div>
+    </div>
+    <script>
+      function switchTab(i) {
+        document.querySelectorAll(".tab").forEach((t, j) => t.classList.toggle("active", j === i));
+        document
+          .querySelectorAll(".tab-panel")
+          .forEach((p, j) => p.classList.toggle("active", j === i));
+      }
+      function copy(btn, e) {
+        if (e) e.stopPropagation();
+        const cmd = btn.closest(".cmd");
+        const text = cmd.querySelector("code").textContent;
+        navigator.clipboard.writeText(text);
+        if (window.startMusic) window.startMusic();
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = "Copy";
+          btn.classList.remove("copied");
+        }, 1500);
+      }
+      document.querySelectorAll(".cmd").forEach((el) => {
+        el.addEventListener("click", () => copy(el.querySelector("button")));
+      });
+    </script>
+    <script type="module">
+      import { toggle, isPlaying } from "/music.mjs";
+      const btn = document.getElementById("music-toggle");
+
+      function updateBtn(on) {
+        btn.innerHTML = on ? "&#9646;&#9646;" : "&#9654;";
+        btn.style.color = on ? "#ededed" : "#444";
+        btn.style.borderColor = on ? "#333" : "#1a1a1a";
+      }
+
+      async function play() {
+        updateBtn(await toggle(() => updateBtn(false)));
+      }
+
+      let userPaused = false;
+
+      function removeAutoplay() {
+        document.removeEventListener("click", autoplay);
+        document.removeEventListener("keydown", autoplay);
+      }
+
+      window.startMusic = () => {
+        if (!userPaused && !isPlaying()) {
+          removeAutoplay();
+          play();
+        }
+      };
+
+      // Auto-play on first user gesture (browsers require interaction)
+      function autoplay() {
+        window.startMusic();
+      }
+      document.addEventListener("click", autoplay);
+      document.addEventListener("keydown", autoplay);
+
+      // Play music when terminal receives focus
+      const terminal = document.getElementById("terminal");
+      terminal.addEventListener("focusin", () => window.startMusic());
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeAutoplay();
+        userPaused = isPlaying();
+        play();
+      });
+
+      // Auto-pause when tab hidden or window loses focus, resume when back
+      let pausedByVisibility = false;
+      function handleFocusLost() {
+        if (isPlaying()) {
+          pausedByVisibility = true;
+          play(); // toggle off
+        }
+      }
+      function handleFocusGained() {
+        if (pausedByVisibility) {
+          pausedByVisibility = false;
+          play(); // toggle on
+        }
+      }
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) handleFocusLost();
+        else handleFocusGained();
+      });
+      window.addEventListener("blur", handleFocusLost);
+      window.addEventListener("focus", handleFocusGained);
+    </script>
+    <script type="module">
+      import { createTerminal } from "/terminal.mjs";
+      const info = <?= JSON.stringify(info) ?>;
+      createTerminal({
+        el: document.getElementById("terminal"),
+        url: location.origin,
+        key: info.demoClientKey,
+        fingerprint: info.serverFingerprint,
+      });
+    </script>
+  </body>
+</html>
