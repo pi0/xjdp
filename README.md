@@ -11,6 +11,12 @@ Eval, exec, and filesystem access to any running JavaScript server over HTTP —
 - SSE streaming with HTTP polling fallback
 - Path-jailed filesystem, env-filtered exec, scoped permissions
 
+## Demos
+
+- **Vercel:** https://xjdp.vercel.app/
+- **Netlify:** https://xjdp.netlify.app/
+- **Deno:** https://xjdp.pi0.deno.net/
+
 ## Quick Start
 
 ### 1. Set up a server
