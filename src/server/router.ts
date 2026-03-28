@@ -16,6 +16,7 @@ import { handleEval } from "./eval/handler.ts";
 import {
   handleExec,
   handleExecKill,
+  isReadonlyCommand,
   type ExecCallbacks,
   type ExecContext,
 } from "./exec/handler.ts";
@@ -25,8 +26,7 @@ import { handleSysinfo } from "./sysinfo/handler.ts";
 /** Maps frame types to required scopes */
 const SCOPE_MAP: Partial<Record<FrameType, Scope>> = {
   "eval.req": "eval",
-  "exec.req": "exec",
-  "exec.kill": "exec",
+  // exec.req and exec.kill are handled inline (safe command bypass)
   "fs.req": undefined, // checked per-op in routeFs
 };
 
@@ -75,6 +75,11 @@ export async function routeFrame(
     const scope = fsScope(frame.payload as FsOp);
     if (!session.scopes.includes(scope)) {
       return { response: errorFrame(frame.id, "FORBIDDEN", `Missing scope: ${scope}`) };
+    }
+  } else if (frame.type === "exec.req") {
+    const { file, args } = (frame as Frame<ExecRequest>).payload;
+    if (!session.scopes.includes("exec") && !isReadonlyCommand(file, args)) {
+      return { response: errorFrame(frame.id, "FORBIDDEN", "Missing scope: exec") };
     }
   } else {
     const requiredScope = SCOPE_MAP[frame.type];

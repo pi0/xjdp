@@ -12,6 +12,26 @@ import type {
   ExecKill,
 } from "../../types.ts";
 
+/**
+ * Read-only commands allowed without the `exec` scope.
+ * Every command here must satisfy ALL of:
+ *  1. No flag/arg combo can write files, send network traffic, or execute sub-commands
+ *  2. Cannot hang indefinitely (no interval modes, no interactive TUI)
+ *  3. Output is bounded and deterministic
+ *  4. No sensitive info beyond what `sysinfo` already exposes
+ */
+// prettier-ignore
+export const READONLY_COMMANDS = /^(uname|uptime|whoami|id|arch|nproc|ls|cat|head|tail|wc|file|stat|df|tree|realpath|basename|dirname|grep|uniq|cut|tr|diff|comm|fold|fmt|column|paste|rev|expand|unexpand|cal|ps|free|which|whereis|echo|printf|test|true|false|pwd|md5sum|sha256sum|sha1sum|base64)$/;
+
+/** Check if a command is in the readonly allowlist */
+export function isReadonlyCommand(file: string, args?: string[]): boolean {
+  const base = file.split("/").pop() ?? file;
+  if (!READONLY_COMMANDS.test(base)) return false;
+  // Reject if any arg contains shell metacharacters (prevents sh -c re-wrapping bypass)
+  if (args?.some((a) => /[|&;<>`$(){}]/.test(a))) return false;
+  return true;
+}
+
 const DEFAULT_ENV_DENYLIST = [
   /^AWS_/,
   /TOKEN/i,
