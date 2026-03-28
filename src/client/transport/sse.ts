@@ -9,6 +9,7 @@ const FRAME_TYPES = [
   "exec.stderr",
   "exec.exit",
   "fs.res",
+  "cwd.res",
   "pong",
   "error",
   "connected",

@@ -52,6 +52,19 @@ src/
 - `pnpm fmt` — auto-fix lint + format
 - `pnpm typecheck` — tsgo type checking
 
+## SSE Frame Types
+
+The `FRAME_TYPES` list in `src/client/transport/sse.ts` must include **every** event type the server can send. The `EventSource` API only dispatches events with registered listeners — unlisted types are silently dropped, causing `sendAndWait` to hang forever. The `_connectFetch` (Node.js) path parses all events from the raw stream, so missing types only break the browser `EventSource` path.
+
+Current server-sent types: `eval.res`, `exec.stdout`, `exec.stderr`, `exec.exit`, `fs.res`, `cwd.res`, `pong`, `error`, `connected`.
+
+## Web Terminal (`src/cli/web.ts`)
+
+- The web readline polyfill reimplements Node's `readline/promises` for xterm.js
+- `promptVisible` gates input: set `false` on Enter (blocks input during command execution), set `true` by `showPrompt()`
+- Lines submitted while `lineResolve` is null are queued in `pendingLines` and drained by the async iterator's `next()`
+- SIGINT (`\x03`) delegates to registered listeners (matching Node readline behavior), falls back to inline `showPrompt()`
+
 ## Conventions
 
 - ESM only, `.ts` extensions in imports

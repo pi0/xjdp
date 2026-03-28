@@ -128,9 +128,11 @@ function createReadlineInterface(
   let line = "";
   let cursor = 0;
   const closeListeners: (() => void)[] = [];
+  const sigintListeners: (() => void)[] = [];
 
   let lineResolve: ((result: IteratorResult<string>) => void) | null = null;
   let promptVisible = false;
+  const pendingLines: string[] = [];
 
   const dispose = xterm.onData((data: string) => {
     if (closed || !promptVisible) return;
@@ -196,6 +198,8 @@ function createReadlineInterface(
           const resolve = lineResolve;
           lineResolve = null;
           resolve({ value: submitted, done: false });
+        } else {
+          pendingLines.push(submitted);
         }
         return;
       }
@@ -210,7 +214,13 @@ function createReadlineInterface(
         xterm.write("^C\r\n");
         line = "";
         cursor = 0;
-        showPrompt();
+        rl.line = "";
+        rl.cursor = 0;
+        if (sigintListeners.length > 0) {
+          for (const fn of sigintListeners) fn();
+        } else {
+          showPrompt();
+        }
       } else if (ch === "\x04") {
         rl.close();
         return;
@@ -315,12 +325,16 @@ function createReadlineInterface(
 
     on(event: string, fn: (...args: unknown[]) => void) {
       if (event === "close") closeListeners.push(fn as () => void);
+      else if (event === "SIGINT") sigintListeners.push(fn as () => void);
     },
 
     [Symbol.asyncIterator]() {
       return {
         next(): Promise<IteratorResult<string>> {
           if (closed) return Promise.resolve({ value: undefined as unknown as string, done: true });
+          if (pendingLines.length > 0) {
+            return Promise.resolve({ value: pendingLines.shift()!, done: false });
+          }
           return new Promise((resolve) => {
             lineResolve = resolve;
           });

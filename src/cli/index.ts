@@ -151,6 +151,15 @@ export async function startRepl(client: RJDPClient, opts: ReplOptions): Promise<
       }
     },
   });
+  // Ctrl+C clears the current line instead of closing the REPL
+  rl.on("SIGINT", () => {
+    // Clear partial input and re-prompt
+    (rl as any).line = "";
+    (rl as any).cursor = 0;
+    stdout.write("\n");
+    rl.setPrompt(jsMode ? jsPrompt : getPrompt());
+    rl.prompt();
+  });
   rl.on("close", () => {
     closing = true;
   });
@@ -239,7 +248,10 @@ export async function startRepl(client: RJDPClient, opts: ReplOptions): Promise<
       }
     }
 
-    if (!closing) rl.prompt();
+    if (!closing) {
+      rl.setPrompt(jsMode ? jsPrompt : getPrompt());
+      rl.prompt();
+    }
   }
 
   stdout.write(dim("\nBye.\n"));
