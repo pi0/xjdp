@@ -484,11 +484,13 @@
     <script type="module">
       import { createTerminal } from "/terminal.mjs?3";
       const info = <?= JSON.stringify(info) ?>;
+      const transport = new URLSearchParams(location.search).get("transport") || "sse";
       createTerminal({
         el: document.getElementById("terminal"),
         url: location.origin,
         key: info.demoClientKey,
         fingerprint: info.serverFingerprint,
+        transport,
       });
     </script>
   </body>
