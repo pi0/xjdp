@@ -1,13 +1,12 @@
 import { useStorage } from "nitro/storage";
-import { createServer, parseKey, generateKeyPair, serializeKey, fingerprint } from "xjdp";
+import { createServer, parseKey, generateKeyPair, fingerprint } from "xjdp";
 
 const serverKeyPair = await loadKeyPair("XJDP_SERVER_KEY");
 const serverFp = await fingerprint(serverKeyPair.publicKey);
 
-// // Demo client key with full access
-// const { keyPair: demoClientKeyPair, serialized: demoClientKey } =
-//   await loadKeyPairWithSerialized("XJDP_DEMO_KEY");
-// const demoClientFp = await fingerprint(demoClientKeyPair.publicKey);
+// Demo client key with full access
+const demoClientKeyPair = await loadKeyPair("XJDP_DEMO_KEY");
+const demoClientFp = await fingerprint(demoClientKeyPair.publicKey);
 
 const kv = useStorage("sessions");
 const rjdp = createServer({
@@ -26,7 +25,7 @@ const rjdp = createServer({
   },
   acl: {
     "*": ["fs:read"],
-    // [demoClientFp]: ["eval", "exec", "fs:read", "fs:write"],
+    [demoClientFp]: ["eval", "exec", "fs:read", "fs:write"],
   },
 });
 
@@ -42,25 +41,11 @@ async function loadKeyPair(envVar: string): Promise<CryptoKeyPair> {
   return generateKeyPair({ extractable: true });
 }
 
-// async function loadKeyPairWithSerialized(
-//   envVar: string,
-// ): Promise<{ keyPair: CryptoKeyPair; serialized: string }> {
-//   const raw = process.env[envVar];
-//   if (raw) {
-//     const result = await parseKey(raw);
-//     if (!("privateKey" in result)) throw new Error(`${envVar} must be a private key`);
-//     return { keyPair: result, serialized: raw };
-//   }
-//   const keyPair = await generateKeyPair({ extractable: true });
-//   const serialized = await serializeKey(keyPair.privateKey);
-//   return { keyPair, serialized };
-// }
-
 // --- Exports ---
 
 export default {
   fetch(req: Request): Response | Promise<Response> | void {
-    const { pathname } = new URL(req.url);
+    const { pathname, searchParams } = new URL(req.url);
     // console.log(`${req.method} ${pathname}`);
     if (pathname.includes("/.jdp")) {
       return rjdp.fetch(req);
@@ -68,13 +53,15 @@ export default {
     if (pathname.includes("/_info")) {
       const origin = new URL("/", req.url).href;
       const fp4 = serverFp.slice(0, 4);
-      return Response.json({
+      const key = searchParams.get("key");
+      const info: Record<string, string> = {
         serverFingerprint: serverFp,
-        // demoClientFingerprint: demoClientFp,
-        // demoClientKey,
         cmdReadonly: `npx xjdp -u ${origin} -f ${fp4}`,
-        // cmdFull: `npx xjdp -u ${origin} -f ${fp4} -k ${demoClientKey}`,
-      });
+      };
+      if (key) {
+        info.cmdFull = `npx xjdp -u ${origin} -f ${fp4} -k ${key}`;
+      }
+      return Response.json(info);
     }
     if (pathname !== "/") {
       return new Response("Not found", { status: 404 });

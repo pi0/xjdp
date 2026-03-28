@@ -121,53 +121,6 @@
       .section {
         margin-bottom: 0.75rem;
       }
-      .tabs {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 0.4rem;
-        padding-left: 0.125rem;
-      }
-      .tab {
-        background: none;
-        border: none;
-        color: #444;
-        cursor: pointer;
-        padding: 0;
-        font-family: "Geist Pixel Square", monospace;
-        font-size: 0.75rem;
-        font-weight: 500;
-        transition: color 0.15s;
-      }
-      .tab:hover {
-        color: #888;
-      }
-      .tab.active {
-        color: #ededed;
-      }
-      .tab:nth-child(1).active {
-        color: #61afef;
-      }
-      .tab:nth-child(2).active {
-        color: #e5c07b;
-      }
-      .tab:nth-child(3).active {
-        color: #c678dd;
-      }
-      .tab-panel {
-        display: none;
-      }
-      .tab-panel.active {
-        display: block;
-      }
-      .tab-panel:nth-child(4).active .cmd {
-        border-color: #61afef44;
-      }
-      .tab-panel:nth-child(5).active .cmd {
-        border-color: #e5c07b44;
-      }
-      .tab-panel:nth-child(6).active .code-block {
-        border-color: #c678dd44;
-      }
       .label {
         color: #666;
         font-size: 0.75rem;
@@ -288,7 +241,9 @@
   </head>
   <body>
     <script server>
-      const info = await serverFetch(new URL("_info", $URL)).then(res => res.json());
+      const _params = new URL($URL).searchParams;
+      const _key = _params.get("key");
+      const info = await serverFetch(new URL(`_info${_key ? `?key=${_key}` : ""}`, $URL)).then(res => res.json());
     </script>
     <div class="card">
       <div style="display: flex; align-items: center; justify-content: space-between">
@@ -311,15 +266,34 @@
           >
             &#9654;
           </button>
+          <button
+            id="logout-btn"
+            aria-label="Logout"
+            style="
+              display: none;
+              background: transparent;
+              border: 1px solid #1a1a1a;
+              border-radius: 6px;
+              color: #444;
+              cursor: pointer;
+              padding: 0.3rem 0.6rem;
+              font-size: 0.7rem;
+              transition: all 0.2s;
+            "
+          >
+            &#x23FB;
+          </button>
         </div>
-        <a
-          class="subtitle"
-          href="https://github.com/pi0/xjdp"
-          target="_blank"
-          rel="noopener"
-          style="margin-top: 0"
-          >pi0/xjdp &rarr;</a
-        >
+        <div style="display: flex; align-items: center; gap: 0.5rem">
+          <a
+            class="subtitle"
+            href="https://github.com/pi0/xjdp"
+            target="_blank"
+            rel="noopener"
+            style="margin-top: 0"
+            >pi0/xjdp &rarr;</a
+          >
+        </div>
       </div>
       <hr class="divider" />
       <div
@@ -328,48 +302,20 @@
       ></div>
       <div class="bottom-section">
         <hr class="divider" />
-        <div class="tabs">
-          <button class="tab full-access-only" onclick="switchTab(0)" style="display:none">Full access</button>
-          <button class="tab" onclick="switchTab(1)">Read-only</button>
-          <button class="tab" onclick="switchTab(2)">Programmatic</button>
-        </div>
-        <div class="tab-panel">
-          <div class="cmd">
-            <code>{{ info.cmdFull }}</code>
-            <button onclick="copy(this, event)">Copy</button>
-          </div>
-        </div>
-        <div class="tab-panel">
-          <div class="cmd">
-            <code>{{ info.cmdReadonly }}</code>
-            <button onclick="copy(this, event)">Copy</button>
-          </div>
-        </div>
-        <div class="tab-panel">
-          <div class="code-block" id="code-snippet"><button onclick="copyCode(this, event)">Copy</button><span class="k">import</span> { RJDPClient } <span class="k">from</span> <span class="s">"xjdp"</span>;
-<span class="c">// No key needed — readonly via wildcard ACL</span>
-<span class="k">const</span> <span class="v">client</span> = <span class="k">await</span> RJDPClient.<span class="f">connect</span>(<span class="s">"{{ $URL }}"</span>);
-
-<span class="k">const</span> <span class="v">entries</span> = <span class="k">await</span> client.<span class="v">fs</span>.<span class="f">list</span>(<span class="s">"."</span>);
-console.<span class="f">log</span>(<span class="v">entries</span>);</div>
+        <div class="cmd">
+          <code id="cmd-text">{{ _key ? info.cmdFull : info.cmdReadonly }}</code>
+          <button onclick="copy(this, event)">Copy</button>
         </div>
         <div class="label" style="text-align: center; margin-top: 0.75rem">Server fingerprint</div>
         <div class="fingerprint">{{ info.serverFingerprint }}</div>
       </div>
     </div>
     <script>
-      function switchTab(i) {
-        document.querySelectorAll(".tab").forEach((t, j) => t.classList.toggle("active", j === i));
-        document
-          .querySelectorAll(".tab-panel")
-          .forEach((p, j) => p.classList.toggle("active", j === i));
-      }
       function copy(btn, e) {
         if (e) e.stopPropagation();
         const cmd = btn.closest(".cmd");
         const text = cmd.querySelector("code").textContent;
         navigator.clipboard.writeText(text);
-        if (window.startMusic) window.startMusic();
         btn.textContent = "Copied!";
         btn.classList.add("copied");
         setTimeout(() => {
@@ -382,7 +328,6 @@ console.<span class="f">log</span>(<span class="v">entries</span>);</div>
         const block = btn.closest(".code-block");
         const text = block.textContent.replace(/^Copy/, "").trimStart();
         navigator.clipboard.writeText(text);
-        if (window.startMusic) window.startMusic();
         btn.textContent = "Copied!";
         btn.classList.add("copied");
         setTimeout(() => {
@@ -416,39 +361,7 @@ console.<span class="f">log</span>(<span class="v">entries</span>);</div>
         updateBtn(await toggle(() => updateBtn(false)));
       }
 
-      let userPaused = false;
-
-      function removeAutoplay() {
-        document.removeEventListener("click", autoplay);
-        document.removeEventListener("keydown", autoplay);
-      }
-
-      let startingMusic = false;
-      window.startMusic = () => {
-        if (!userPaused && !isPlaying() && !startingMusic) {
-          startingMusic = true;
-          removeAutoplay();
-          play().finally(() => {
-            startingMusic = false;
-          });
-        }
-      };
-
-      // Auto-play on first user gesture (browsers require interaction)
-      function autoplay() {
-        window.startMusic();
-      }
-      document.addEventListener("click", autoplay);
-      document.addEventListener("keydown", autoplay);
-
-      // Play music when terminal receives focus
-      const terminal = document.getElementById("terminal");
-      terminal.addEventListener("focusin", () => window.startMusic());
-
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        removeAutoplay();
-        userPaused = isPlaying();
+      btn.addEventListener("click", () => {
         play();
       });
 
@@ -478,19 +391,20 @@ console.<span class="f">log</span>(<span class="v">entries</span>);</div>
       const info = <?= JSON.stringify(info) ?>;
       const params = new URLSearchParams(location.search);
       const transport = params.get("transport") || "http";
-      const key = params.get("key");
+      const key = params.get("key") || undefined;
       if (key) {
-        document.querySelectorAll(".full-access-only").forEach(el => {
-          el.style.display = "";
+        const btn = document.getElementById("logout-btn");
+        btn.style.display = "";
+        btn.addEventListener("click", () => {
+          const u = new URL(location);
+          u.searchParams.delete("key");
+          location.href = u;
         });
-        switchTab(0);
-      } else {
-        switchTab(1);
       }
       createTerminal({
         el: document.getElementById("terminal"),
         url: location.origin,
-        key: key || undefined,
+        key,
         fingerprint: info.serverFingerprint,
         transport,
       });

@@ -93,7 +93,7 @@ export async function createTerminal({ el, url, key, fingerprint, transport = "h
   const fp4 = fingerprint.slice(0, 4);
 
   // Restore cached session from localStorage
-  const STORAGE_KEY = "xjdp_session";
+  const STORAGE_KEY = key ? "xjdp_session:key" : "xjdp_session";
   let cachedSession;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
