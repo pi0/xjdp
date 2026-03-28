@@ -1,13 +1,13 @@
-# xjdp
+# 🐚 xjdp
 
-Secure DevTools protocol for your remote JS servers.
+Remote shell for JavaScript servers.
 
-xjdp gives you **eval**, **exec**, and **filesystem** access to any running JavaScript server through a lightweight debugging protocol. Think of it as attaching a DevTools session to a production Node.js process, except it works over HTTP with ECDSA public-key authentication, scoped permissions, and path-jailed filesystem access — instead of an open WebSocket on localhost.
+Eval, exec, and filesystem access to any running JavaScript server over HTTP — with ECDSA public-key auth, scoped permissions, and path-jailed filesystem.
 
-**Built for AI agents.** Connect an agent to a remote server and let it inspect state, run commands, read logs, and edit files — turning any deployment into an interactive sandbox. Treat long-running servers like short-lived containers: **attach, debug, fix, detach**.
+**Built for AI agents and curious humans!** Connect an agent to a remote server and let it inspect state, run commands, read logs, and edit files. Turning any deployment into an interactive sandbox.
 
-- Zero production dependencies — Web Crypto API only
-- Isomorphic client (browser + Node.js + AI agents)
+- Zero dependencies.
+- Isomorphic client (browser, Node.js, AI agents)
 - SSE streaming with HTTP polling fallback
 - Path-jailed filesystem, env-filtered exec, scoped permissions
 
@@ -23,8 +23,8 @@ import { createServer, generateKeyPair, fingerprint } from "xjdp";
 
 const serverKeyPair = await generateKeyPair();
 
-// Print server fingerprint — clients use this to verify they're connecting to the right server
-console.log("Server fingerprint:", await fingerprint(serverKeyPair.publicKey));
+// Clients use this to verify the server identity
+console.log("fingerprint:", await fingerprint(serverKeyPair.publicKey));
 
 const server = createServer({
   serverKeyPair,
@@ -45,7 +45,7 @@ npx xjdp keygen
 
 This outputs everything you need:
 
-```sh
+```
 Generated ECDSA P-384 key pair
 
 Fingerprint:
@@ -117,17 +117,25 @@ await client.fs.delete("/tmp/out.txt");
 client.close();
 ```
 
-## Key Utilities
+## CLI
 
-| Function                                 | Description                                                     |
-| ---------------------------------------- | --------------------------------------------------------------- |
-| `generateKeyPair()`                      | Generate ECDSA P-384 key pair (non-extractable by default)      |
-| `generateKeyPair({ extractable: true })` | Generate extractable key pair (for serialization)               |
-| `serializeKey(key)`                      | Serialize a CryptoKey to a compact base64 string                |
-| `parseKey(str)`                          | Parse back to `CryptoKeyPair` (private) or `CryptoKey` (public) |
-| `fingerprint(publicKey)`                 | SHA-256 hex fingerprint of a public key                         |
+```bash
+npx xjdp [flags]
+```
 
-## CLI Commands
+| Flag                | Env Var            | Description                                   |
+| ------------------- | ------------------ | --------------------------------------------- |
+| `-u, --url`         | `XJDP_URL`         | Server URL (default: `http://localhost:3000`) |
+| `-f, --fingerprint` | `XJDP_FINGERPRINT` | Expected server fingerprint (prefix match)    |
+| `-k, --key`         | `XJDP_KEY`         | Pre-shared private key (base64 JWK)           |
+
+### Subcommands
+
+| Command  | Description                                                   |
+| -------- | ------------------------------------------------------------- |
+| `keygen` | Generate a key pair and print fingerprint, key, and ACL entry |
+
+### REPL Commands
 
 | Command               | Description                                   |
 | --------------------- | --------------------------------------------- |
@@ -147,20 +155,6 @@ client.close();
 | `exit`                | Quit                                          |
 
 Unrecognized commands are passed to `exec` automatically, so you can type `node -v` or `git status` directly.
-
-## CLI Flags
-
-| Flag                | Env Var            | Description                                   |
-| ------------------- | ------------------ | --------------------------------------------- |
-| `-u, --url`         | `XJDP_URL`         | Server URL (default: `http://localhost:3000`) |
-| `-f, --fingerprint` | `XJDP_FINGERPRINT` | Expected server fingerprint (prefix match)    |
-| `-k, --key`         | `XJDP_KEY`         | Pre-shared private key (base64 JWK)           |
-
-### Subcommands
-
-| Command  | Description                                                   |
-| -------- | ------------------------------------------------------------- |
-| `keygen` | Generate a key pair and print fingerprint, key, and ACL entry |
 
 ### Examples
 
@@ -201,17 +195,15 @@ createServer({
 | `fs:read`  | Read files, list directories, stat     |
 | `fs:write` | Write files, mkdir, rename, delete     |
 
-## Endpoints
+## Key Utilities
 
-| Endpoint          | Method | Auth | Description                                   |
-| ----------------- | ------ | ---- | --------------------------------------------- |
-| `/.jdp/info`      | GET    | No   | Capabilities, transports & server fingerprint |
-| `/.jdp/challenge` | GET    | No   | Request auth nonce                            |
-| `/.jdp/auth`      | POST   | No   | Authenticate with signed nonce                |
-| `/.jdp/stream`    | GET    | Yes  | Open SSE stream                               |
-| `/.jdp/send`      | POST   | Yes  | Send frame via SSE transport                  |
-| `/.jdp/invoke`    | POST   | Yes  | Send frame via HTTP transport                 |
-| `/.jdp/poll`      | GET    | Yes  | Poll exec output (HTTP fallback)              |
+| Function                                 | Description                                                     |
+| ---------------------------------------- | --------------------------------------------------------------- |
+| `generateKeyPair()`                      | Generate ECDSA P-384 key pair (non-extractable by default)      |
+| `generateKeyPair({ extractable: true })` | Generate extractable key pair (for serialization)               |
+| `serializeKey(key)`                      | Serialize a CryptoKey to a compact base64 string                |
+| `parseKey(str)`                          | Parse back to `CryptoKeyPair` (private) or `CryptoKey` (public) |
+| `fingerprint(publicKey)`                 | SHA-256 hex fingerprint of a public key                         |
 
 ## Protocol
 
@@ -269,9 +261,21 @@ Frames: { id, type, ts, payload }
   ping     ──► pong
 ```
 
+## Endpoints
+
+| Endpoint          | Method | Auth | Description                                   |
+| ----------------- | ------ | ---- | --------------------------------------------- |
+| `/.jdp/info`      | GET    | No   | Capabilities, transports & server fingerprint |
+| `/.jdp/challenge` | GET    | No   | Request auth nonce                            |
+| `/.jdp/auth`      | POST   | No   | Authenticate with signed nonce                |
+| `/.jdp/stream`    | GET    | Yes  | Open SSE stream                               |
+| `/.jdp/send`      | POST   | Yes  | Send frame via SSE transport                  |
+| `/.jdp/invoke`    | POST   | Yes  | Send frame via HTTP transport                 |
+| `/.jdp/poll`      | GET    | Yes  | Poll exec output (HTTP fallback)              |
+
 ## Authentication
 
-All auth uses **ECDSA P-384** via the Web Crypto API. No OpenSSL or third-party crypto required.
+All auth uses **ECDSA P-384** via the Web Crypto API. No OpenSSL or third-party crypto.
 
 1. Client fetches `/.jdp/info` — optionally verifies server fingerprint (prefix match)
 2. Client requests a challenge nonce from the server
