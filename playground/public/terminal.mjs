@@ -90,13 +90,42 @@ export async function createTerminal({ el, url, key, fingerprint }) {
   const { privateKey, publicKey } = await parseKey(key);
   const fp4 = fingerprint.slice(0, 4);
 
+  // Restore cached session from localStorage
+  const STORAGE_KEY = "xjdp_session";
+  let cachedSession;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.expiresAt > Date.now()) {
+        cachedSession = parsed;
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  } catch {}
+
   const t0 = performance.now();
   const client = await RJDPClient.connect(url, {
     privateKey,
     publicKey,
     serverFingerprint: fp4,
+    session: cachedSession,
   });
   const latency = Math.round(performance.now() - t0);
+
+  // Persist session for next reload
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        sessionId: client.sessionId,
+        ip: client.ip,
+        scopes: client.scopes,
+        expiresAt: client.expiresAt,
+      }),
+    );
+  } catch {}
 
   // Gather remote system info
   const fp = await getFingerprint(publicKey);

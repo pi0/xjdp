@@ -189,8 +189,53 @@ createServer({
   evalTimeout: 5000, // Eval timeout in ms (default: 5s)
   maxReadSize: 10485760, // Max file read size (default: 10MB)
   envDenylist: [/AWS_.*/, /.*TOKEN.*/], // Exec env filter patterns
+  storage: Storage, // External KV for sessions/nonces (default: in-memory)
 });
 ```
+
+### External Storage
+
+By default, sessions and nonces are stored in-memory. This works for single-instance deployments but **breaks on serverless platforms** (Netlify, AWS Lambda, etc.) where each request may hit a different instance.
+
+Pass a `storage` option implementing the `Storage` interface to use an external KV store:
+
+```ts
+interface Storage {
+  get(key: string): string | undefined | Promise<string | undefined>;
+  set(key: string, value: string, ttl?: number): void | Promise<void>;
+  delete(key: string): void | Promise<void>;
+}
+```
+
+Example with Redis:
+
+```ts
+import { createClient } from "redis";
+
+const redis = createClient({ url: process.env.REDIS_URL });
+await redis.connect();
+
+const storage = {
+  async get(key) {
+    return (await redis.get(key)) ?? undefined;
+  },
+  async set(key, value, ttl) {
+    if (ttl) await redis.set(key, value, { PX: ttl });
+    else await redis.set(key, value);
+  },
+  async delete(key) {
+    await redis.del(key);
+  },
+};
+
+const server = createServer({
+  serverKeyPair,
+  acl: { "*": ["fs:read"] },
+  storage,
+});
+```
+
+Any KV store with get/set/delete works: Redis, Upstash, Deno KV, Netlify Blobs, Cloudflare KV, etc.
 
 ### Scopes
 

@@ -21,10 +21,11 @@ src/
 └── server/
     ├── handler.ts              # Main fetch() handler — routes /.jdp/* endpoints
     ├── router.ts               # Frame router + scope enforcement
+    ├── _storage.ts             # MemoryStorage default impl of Storage interface
     ├── auth/
     │   ├── _crypto.ts          # ECDSA P-384 Web Crypto helpers (sign, verify, fingerprint)
-    │   ├── _nonce.ts           # LRU nonce cache (replay prevention, 30s TTL)
-    │   ├── _session.ts         # Session store (in-memory, configurable TTL)
+    │   ├── _nonce.ts           # Nonce cache (replay prevention, 30s TTL) — backed by Storage
+    │   ├── _session.ts         # Session store (configurable TTL) — backed by Storage
     │   └── handler.ts          # Auth endpoints: challenge, auth, getSession
     ├── eval/
     │   └── handler.ts          # Single-shot JS eval via AsyncFunction
@@ -44,6 +45,7 @@ src/
 - **Two transports**: SSE (streaming) and HTTP (request/response fallback with polling)
 - **Auth**: ECDSA P-384 challenge-response with public key ACL and scoped sessions
 - **Security**: path jail with symlink check, env denylist, nonce replay prevention, per-session rate limits
+- **Pluggable storage**: `SessionStore` and `NonceCache` are backed by a `Storage` interface (default: in-memory). For serverless/multi-instance deployments, pass a custom `Storage` via `ServerConfig.storage` (e.g., Redis, Deno KV, Netlify Blobs). The interface is `get`/`set`/`delete` with optional TTL, supporting both sync and async returns.
 
 ## Dev Commands
 

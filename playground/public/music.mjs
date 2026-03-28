@@ -1,405 +1,288 @@
-// Retro keygen chiptune synth (Web Audio API)
-// Demoscene-style tracker tune with delay, detuned oscillators, and pattern variation
+// Tiny self-contained XM-style tracker player using modern Web Audio APIs.
+// No external scripts, no WASM, no CDN.
 
-const BPM = 140;
-const STEP = 60 / BPM / 4; // 16th note
-
-// C minor scale frequencies
-const NOTE = {
-  C3: 130.81,
-  D3: 146.83,
-  Eb3: 155.56,
-  F3: 174.61,
-  G3: 196.0,
-  Ab3: 207.65,
-  Bb3: 233.08,
-  C4: 261.63,
-  D4: 293.66,
-  Eb4: 311.13,
-  F4: 349.23,
-  G4: 392.0,
-  Ab4: 415.3,
-  Bb4: 466.16,
-  C5: 523.25,
-  D5: 587.33,
-  Eb5: 622.25,
-  F5: 698.46,
-  G5: 784.0,
-  Ab5: 830.61,
-  Bb5: 932.33,
-  C6: 1046.5,
+const SONG = {
+  bpm: 125,
+  speed: 6,
+  loop: true,
+  channels: 4,
+  order: [0, 1, 0, 2],
+  patterns: [
+    [
+      ["C5", null, "G4", null],
+      [null, null, null, null],
+      ["E5", null, "A4", null],
+      [null, null, null, null],
+      ["G5", null, "B4", null],
+      [null, null, null, null],
+      ["E5", null, "A4", "E3"],
+      [null, null, null, null],
+      ["C5", null, "G4", null],
+      [null, null, null, null],
+      ["E5", null, "A4", null],
+      [null, null, null, null],
+      ["A5", "E6", "C5", "F3"],
+      [null, null, null, null],
+      ["G5", null, "B4", null],
+      [null, null, null, null],
+    ],
+    [
+      ["F5", null, "A4", "D3"],
+      [null, null, null, null],
+      ["E5", null, "G4", null],
+      [null, null, null, null],
+      ["D5", null, "F4", null],
+      [null, null, null, null],
+      ["C5", "G5", "E4", "C3"],
+      [null, null, null, null],
+      ["A4", null, "F4", "A2"],
+      [null, null, null, null],
+      ["B4", null, "G4", null],
+      [null, null, null, null],
+      ["C5", "G5", "E4", "G2"],
+      [null, null, null, null],
+      ["D5", null, "F4", null],
+      [null, null, null, null],
+    ],
+    [
+      ["C5", "G5", "E4", "C3"],
+      [null, null, null, null],
+      ["E5", "C6", "G4", null],
+      [null, null, null, null],
+      ["G5", "E6", "B4", null],
+      [null, null, null, null],
+      ["A5", "F6", "C5", "A2"],
+      [null, null, null, null],
+      ["G5", "E6", "B4", "G2"],
+      [null, null, null, null],
+      ["E5", "C6", "A4", null],
+      [null, null, null, null],
+      ["D5", "B5", "G4", "F2"],
+      [null, null, null, null],
+      ["C5", "G5", "E4", "C2"],
+      [null, null, null, null],
+    ],
+  ],
 };
 
-// Pattern A — melodic, ascending feel
-const LEAD_A = [
-  "C5",
-  "Eb5",
-  "G5",
-  "Eb5",
-  "F5",
-  "D5",
-  "Eb5",
-  "C5",
-  "Bb4",
-  "C5",
-  "Eb5",
-  "G5",
-  "Ab5",
-  "G5",
-  "F5",
-  "Eb5",
-];
-// Pattern B — call-and-response
-const LEAD_B = [
-  "G5",
-  "F5",
-  "Eb5",
-  "D5",
-  "C5",
-  null,
-  "Eb5",
-  "G5",
-  "Ab5",
-  "Bb5",
-  "G5",
-  "F5",
-  "Eb5",
-  "D5",
-  "C5",
-  null,
-];
-// Pattern C — high energy riff
-const LEAD_C = [
-  "C6",
-  "Bb5",
-  "Ab5",
-  "G5",
-  "Ab5",
-  "Bb5",
-  "G5",
-  "F5",
-  "Eb5",
-  "F5",
-  "G5",
-  "Eb5",
-  "D5",
-  "C5",
-  "D5",
-  "Eb5",
+const CHANNELS = [
+  { type: "lead", wave: "square", gain: 0.12, attack: 0.002, release: 0.08, stereo: -0.5 },
+  { type: "arp", wave: "triangle", gain: 0.05, attack: 0.002, release: 0.04, stereo: 0.5 },
+  { type: "pad", wave: "sawtooth", gain: 0.045, attack: 0.01, release: 0.12, stereo: 0.15 },
+  { type: "bass", wave: "triangle", gain: 0.1, attack: 0.002, release: 0.08, stereo: 0 },
 ];
 
-// Arpeggio patterns (triads)
-const ARP_A = [
-  "C4",
-  "Eb4",
-  "G4",
-  "C5",
-  "G4",
-  "Eb4",
-  "C4",
-  "Eb4",
-  "F4",
-  "Ab4",
-  "C5",
-  "Ab4",
-  "F4",
-  "Ab4",
-  "C5",
-  "F5",
-];
-const ARP_B = [
-  "Eb4",
-  "G4",
-  "Bb4",
-  "Eb5",
-  "Bb4",
-  "G4",
-  "Eb4",
-  "G4",
-  "Ab4",
-  "C5",
-  "Eb5",
-  "C5",
-  "Ab4",
-  "C5",
-  "Eb5",
-  "Ab5",
-];
-
-// Bass lines
-const BASS_A = [
-  "C3",
-  null,
-  "C3",
-  null,
-  "F3",
-  null,
-  "F3",
-  null,
-  "Ab3",
-  null,
-  "Ab3",
-  null,
-  "G3",
-  null,
-  "G3",
-  "G3",
-];
-const BASS_B = [
-  "Eb3",
-  null,
-  "Eb3",
-  null,
-  "Bb3",
-  null,
-  "Bb3",
-  null,
-  "Ab3",
-  null,
-  "Ab3",
-  "G3",
-  "F3",
-  null,
-  "G3",
-  null,
-];
-
-// Drum patterns
-const KICK_A = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0];
-const KICK_B = [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0];
-const HAT_A = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0];
-const HAT_B = [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1];
-const SNR_A = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
-const SNR_B = [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1];
-const OH_A = [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1]; // open hat accent
-
-// Song structure (bar arrangements) — cycles every 8 bars
-const SONG = [
-  { lead: LEAD_A, arp: ARP_A, bass: BASS_A, kick: KICK_A, hat: HAT_A, snr: SNR_A, oh: OH_A },
-  { lead: LEAD_A, arp: ARP_A, bass: BASS_A, kick: KICK_A, hat: HAT_A, snr: SNR_A, oh: OH_A },
-  { lead: LEAD_B, arp: ARP_B, bass: BASS_B, kick: KICK_B, hat: HAT_B, snr: SNR_B, oh: OH_A },
-  { lead: LEAD_B, arp: ARP_B, bass: BASS_B, kick: KICK_B, hat: HAT_B, snr: SNR_B, oh: OH_A },
-  { lead: LEAD_C, arp: ARP_A, bass: BASS_A, kick: KICK_B, hat: HAT_B, snr: SNR_B, oh: OH_A },
-  { lead: LEAD_C, arp: ARP_B, bass: BASS_B, kick: KICK_B, hat: HAT_B, snr: SNR_B, oh: OH_A },
-  { lead: LEAD_A, arp: ARP_B, bass: BASS_A, kick: KICK_A, hat: HAT_A, snr: SNR_A, oh: OH_A },
-  { lead: LEAD_B, arp: ARP_A, bass: BASS_B, kick: KICK_A, hat: HAT_B, snr: SNR_A, oh: OH_A },
-];
-
-let audioCtx;
+let ctx;
+let master;
+let limiter;
+let noiseBuffer;
 let playing = false;
-let barIndex = 0;
-let masterGain;
-let delayNode;
-let feedbackGain;
-let nextStartTime = 0;
+let timer = null;
+let nextNoteTime = 0;
+let currentOrder = 0;
+let currentRow = 0;
+let onStop;
 
-function initEffects(ctx) {
-  masterGain = ctx.createGain();
-  masterGain.gain.value = 0.85;
-
-  // Stereo delay for spaciousness
-  delayNode = ctx.createDelay(1);
-  delayNode.delayTime.value = STEP * 3; // dotted 8th delay
-  feedbackGain = ctx.createGain();
-  feedbackGain.gain.value = 0.3;
-
-  const delayFilter = ctx.createBiquadFilter();
-  delayFilter.type = "lowpass";
-  delayFilter.frequency.value = 3000;
-
-  // delay → filter → feedback → delay
-  delayNode.connect(delayFilter);
-  delayFilter.connect(feedbackGain);
-  feedbackGain.connect(delayNode);
-
-  // delay output → master
-  delayFilter.connect(masterGain);
-  masterGain.connect(ctx.destination);
+function noteToFreq(note) {
+  if (!note) return 0;
+  const m = /^([A-G])(#?)(-?\d+)$/.exec(note);
+  if (!m) throw new Error(`Invalid note: ${note}`);
+  const [, n, sharp, octaveStr] = m;
+  const semis = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[n] + (sharp ? 1 : 0);
+  const midi = (Number(octaveStr) + 1) * 12 + semis;
+  return 440 * 2 ** ((midi - 69) / 12);
 }
 
-function chip(
-  ctx,
-  freq,
-  start,
-  dur,
-  { type = "square", vol = 0.08, detune = 0, vibrato = 0, delay = false } = {},
-) {
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(vol, start);
-  gain.gain.setValueAtTime(vol * 0.8, start + dur * 0.6);
-  gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
-
-  const dest = delay && delayNode ? delayNode : masterGain;
-  if (!dest) return;
-
-  // Main oscillator
-  const osc = ctx.createOscillator();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, start);
-  if (detune) osc.detune.setValueAtTime(detune, start);
-
-  // Vibrato LFO
-  if (vibrato > 0) {
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.frequency.value = 5.5;
-    lfoGain.gain.value = vibrato;
-    lfo.connect(lfoGain);
-    lfoGain.connect(osc.frequency);
-    lfo.start(start);
-    lfo.stop(start + dur);
-  }
-
-  osc.connect(gain);
-
-  // Detuned second oscillator for thickness
-  if (detune) {
-    const osc2 = ctx.createOscillator();
-    osc2.type = type;
-    osc2.frequency.setValueAtTime(freq, start);
-    osc2.detune.setValueAtTime(-detune, start);
-    osc2.connect(gain);
-    osc2.start(start);
-    osc2.stop(start + dur);
-  }
-
-  gain.connect(dest);
-  osc.start(start);
-  osc.stop(start + dur);
+function tickDuration() {
+  return 2.5 / SONG.bpm;
 }
 
-function noise(ctx, start, dur, vol = 0.06, hpFreq = 8000) {
-  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-  const data = buf.getChannelData(0);
+function rowDuration() {
+  return tickDuration() * SONG.speed;
+}
+
+function ensureAudio() {
+  if (ctx) return;
+
+  ctx = new AudioContext({ latencyHint: "interactive" });
+
+  master = new GainNode(ctx, { gain: 0.7 });
+  const hp = new BiquadFilterNode(ctx, { type: "highpass", frequency: 30, Q: 0.7 });
+  const lp = new BiquadFilterNode(ctx, { type: "lowpass", frequency: 9000, Q: 0.2 });
+  limiter = new DynamicsCompressorNode(ctx, {
+    threshold: -18,
+    knee: 6,
+    ratio: 8,
+    attack: 0.003,
+    release: 0.15,
+  });
+
+  master.connect(hp).connect(lp).connect(limiter).connect(ctx.destination);
+
+  const noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+  const data = noise.getChannelData(0);
   for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  const src = ctx.createBufferSource();
-  const gain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-  src.buffer = buf;
-  filter.type = "highpass";
-  filter.frequency.value = hpFreq;
-  gain.gain.setValueAtTime(vol, start);
-  gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
-  src.connect(filter).connect(gain).connect(masterGain);
-  src.start(start);
-  src.stop(start + dur);
+  noiseBuffer = noise;
 }
 
-function kick(ctx, start) {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.frequency.setValueAtTime(160, start);
-  osc.frequency.exponentialRampToValueAtTime(28, start + 0.12);
-  gain.gain.setValueAtTime(0.3, start);
-  gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
-  osc.connect(gain).connect(masterGain);
-  osc.start(start);
-  osc.stop(start + 0.18);
-
-  // Click transient
-  const click = ctx.createOscillator();
-  const clickGain = ctx.createGain();
-  click.frequency.value = 1000;
-  clickGain.gain.setValueAtTime(0.15, start);
-  clickGain.gain.exponentialRampToValueAtTime(0.001, start + 0.015);
-  click.connect(clickGain).connect(masterGain);
-  click.start(start);
-  click.stop(start + 0.02);
+function accentForRow(row) {
+  if (row % 8 === 0) return 1;
+  if (row % 4 === 0) return 0.88;
+  if (row % 2 === 0) return 0.76;
+  return 0.68;
 }
 
-function scheduleLoop() {
-  if (!masterGain) initEffects(audioCtx);
+function scheduleNoiseBurst(time, volume = 0.018) {
+  const src = new AudioBufferSourceNode(ctx, { buffer: noiseBuffer });
+  const filter = new BiquadFilterNode(ctx, { type: "bandpass", frequency: 7000, Q: 0.8 });
+  const gain = new GainNode(ctx, { gain: 0.0001 });
+  src.connect(filter).connect(gain).connect(master);
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.exponentialRampToValueAtTime(volume, time + 0.002);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+  src.start(time);
+  src.stop(time + 0.06);
+}
 
-  const now = audioCtx.currentTime;
-  const start = nextStartTime > now ? nextStartTime : now + 0.05;
-  const bars = 4;
-  const steps = bars * 16;
-  const duration = steps * STEP;
+function scheduleKick(time, rootFreq, volume = 0.12) {
+  const osc = new OscillatorNode(ctx, { type: "sine", frequency: rootFreq * 1.5 });
+  const gain = new GainNode(ctx, { gain: 0.0001 });
+  osc.connect(gain).connect(master);
+  osc.frequency.setValueAtTime(rootFreq * 1.8, time);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(42, rootFreq * 0.55), time + 0.08);
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.exponentialRampToValueAtTime(volume, time + 0.002);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
+  osc.start(time);
+  osc.stop(time + 0.12);
+}
 
-  for (let i = 0; i < steps; i++) {
-    const t = start + i * STEP;
-    const bar = Math.floor(i / 16);
-    const s = i % 16;
-    const pattern = SONG[(barIndex + bar) % SONG.length];
+function scheduleVoice(channelIndex, note, time, duration, velocity = 1) {
+  if (!note) return;
+  const cfg = CHANNELS[channelIndex];
+  const freq = noteToFreq(note);
+  const gainValue = cfg.gain * velocity;
+  const pan = new StereoPannerNode(ctx, { pan: cfg.stereo });
+  const gain = new GainNode(ctx, { gain: 0.0001 });
+  let source;
 
-    // Lead — detuned square with vibrato, fed into delay
-    const leadNote = pattern.lead[s];
-    if (leadNote) {
-      chip(audioCtx, NOTE[leadNote], t, STEP * 1.6, {
-        type: "square",
-        vol: 0.055,
-        detune: 8,
-        vibrato: 3,
-        delay: true,
-      });
+  if (cfg.type === "lead" || cfg.type === "pad" || cfg.type === "bass") {
+    source = new OscillatorNode(ctx, { type: cfg.wave, frequency: freq });
+
+    if (cfg.type === "lead") {
+      const vibrato = new OscillatorNode(ctx, { type: "sine", frequency: 5.2 });
+      const vibratoGain = new GainNode(ctx, { gain: 4.5 });
+      vibrato.connect(vibratoGain).connect(source.frequency);
+      vibrato.start(time);
+      vibrato.stop(time + duration + 0.2);
     }
 
-    // Arp — fast sawtooth, also delayed
-    const arpNote = pattern.arp[s];
-    if (arpNote) {
-      chip(audioCtx, NOTE[arpNote], t, STEP * 0.5, {
-        type: "sawtooth",
-        vol: 0.03,
-        delay: true,
-      });
+    if (cfg.type === "pad") {
+      const filter = new BiquadFilterNode(ctx, { type: "lowpass", frequency: 2400, Q: 2.5 });
+      source.connect(filter).connect(gain).connect(pan).connect(master);
+    } else {
+      source.connect(gain).connect(pan).connect(master);
     }
-
-    // Bass — thick detuned sawtooth
-    const bassNote = pattern.bass[s];
-    if (bassNote) {
-      chip(audioCtx, NOTE[bassNote], t, STEP * 1.8, {
-        type: "sawtooth",
-        vol: 0.1,
-        detune: 12,
-      });
-    }
-
-    // Drums
-    if (pattern.kick[s]) kick(audioCtx, t);
-    if (pattern.hat[s]) noise(audioCtx, t, 0.035, 0.035, 9000);
-    if (pattern.snr[s]) noise(audioCtx, t, 0.1, 0.09, 3000);
-    if (pattern.oh[s]) noise(audioCtx, t, 0.15, 0.05, 6000); // open hat
+  } else {
+    const oscA = new OscillatorNode(ctx, { type: "triangle", frequency: freq });
+    const oscB = new OscillatorNode(ctx, { type: "triangle", frequency: freq * 1.26 });
+    const mix = new GainNode(ctx, { gain: 0.5 });
+    oscA.connect(mix);
+    oscB.connect(mix);
+    mix.connect(gain).connect(pan).connect(master);
+    oscA.start(time);
+    oscB.start(time);
+    oscA.stop(time + duration + 0.05);
+    oscB.stop(time + duration + 0.05);
+    source = null;
   }
 
-  barIndex = (barIndex + bars) % SONG.length;
-  nextStartTime = start + duration;
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.exponentialRampToValueAtTime(gainValue, time + cfg.attack);
+  gain.gain.setTargetAtTime(gainValue * 0.82, time + cfg.attack, Math.max(0.02, duration * 0.2));
+  gain.gain.setTargetAtTime(0.0001, time + Math.max(cfg.attack, duration - cfg.release), cfg.release / 3);
 
-  // Re-schedule ~200ms before current batch ends to avoid gaps
-  const msUntilEnd = (nextStartTime - audioCtx.currentTime) * 1000;
-  setTimeout(
-    () => {
-      if (playing) {
-        scheduleLoop();
-      } else {
-        onEnd?.();
-      }
-    },
-    Math.max(0, msUntilEnd - 200),
-  );
+  if (source) {
+    source.start(time);
+    source.stop(time + duration + 0.05);
+  }
 }
 
-let onEnd;
+function scheduleRow(time) {
+  const patternIndex = SONG.order[currentOrder];
+  const pattern = SONG.patterns[patternIndex];
+  const row = pattern[currentRow];
+  const dur = rowDuration() * 0.98;
+  const accent = accentForRow(currentRow);
+
+  row.forEach((note, i) => {
+    if (!note) return;
+    scheduleVoice(i, note, time, dur, accent);
+  });
+
+  if (currentRow % 4 === 0) scheduleNoiseBurst(time, 0.014 * accent);
+  if (row[3]) scheduleKick(time, noteToFreq(row[3]), 0.11 * accent);
+
+  currentRow += 1;
+  if (currentRow >= pattern.length) {
+    currentRow = 0;
+    currentOrder += 1;
+    if (currentOrder >= SONG.order.length) {
+      if (SONG.loop) currentOrder = 0;
+      else stopPlayback();
+    }
+  }
+}
+
+function scheduler() {
+  const lookAhead = 0.12;
+  while (playing && nextNoteTime < ctx.currentTime + lookAhead) {
+    scheduleRow(nextNoteTime);
+    nextNoteTime += rowDuration();
+  }
+}
+
+function resetSong() {
+  currentOrder = 0;
+  currentRow = 0;
+  nextNoteTime = ctx.currentTime + 0.02;
+}
+
+function stopPlayback(fireCallback = true) {
+  playing = false;
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+  if (master) {
+    const now = ctx.currentTime;
+    master.gain.cancelScheduledValues(now);
+    master.gain.setTargetAtTime(0.0001, now, 0.03);
+    setTimeout(() => {
+      if (master) master.gain.setValueAtTime(0.7, ctx.currentTime);
+    }, 120);
+  }
+  if (fireCallback) onStop?.();
+  onStop = undefined;
+}
 
 export function isPlaying() {
   return playing;
 }
 
 export async function toggle(cb) {
+  ensureAudio();
+
   if (!playing) {
+    if (ctx.state === "suspended") await ctx.resume();
+    onStop = cb;
+    resetSong();
     playing = true;
-    audioCtx = audioCtx || new AudioContext();
-    if (audioCtx.state === "suspended") await audioCtx.resume();
-    onEnd = cb;
-    scheduleLoop();
+    timer = setInterval(scheduler, 25);
+    scheduler();
     return true;
   }
-  playing = false;
-  masterGain = null;
-  delayNode = null;
-  feedbackGain = null;
-  barIndex = 0;
-  nextStartTime = 0;
-  audioCtx.close();
-  audioCtx = null;
+
+  stopPlayback();
   return false;
 }

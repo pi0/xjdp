@@ -26,6 +26,7 @@ export function createServer(config: ServerConfig): ServerInstance {
     serverKeyPair: config.serverKeyPair,
     acl: config.acl,
     sessionTtl: config.sessionTtl,
+    storage: config.storage,
   });
 
   const execCtx = createExecContext({
@@ -41,6 +42,7 @@ export function createServer(config: ServerConfig): ServerInstance {
   const routerCtx: RouterContext = {
     execCtx,
     fsCtx,
+    sessionStore: authCtx.sessionStore,
     evalTimeout: config.evalTimeout,
     maxConcurrentExec: config.maxConcurrentExec,
   };
@@ -84,7 +86,7 @@ async function handleRequest(request: Request, ctx: HandlerContext): Promise<Res
   }
 
   // All other routes require a valid session
-  const session = getSession(ctx.authCtx, request);
+  const session = await getSession(ctx.authCtx, request);
   if (!session) {
     return Response.json(
       { code: "UNAUTHORIZED", message: "Valid session required" },

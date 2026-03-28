@@ -147,6 +147,14 @@ export interface AuthResponse {
   expiresAt: number;
 }
 
+// --- Storage ---
+
+export interface Storage {
+  get(key: string): string | undefined | Promise<string | undefined>;
+  set(key: string, value: string, ttl?: number): void | Promise<void>;
+  delete(key: string): void | Promise<void>;
+}
+
 // --- Server Config ---
 
 export interface ServerConfig {
@@ -172,4 +180,6 @@ export interface ServerConfig {
   evalTimeout?: number;
   /** Env denylist patterns for exec */
   envDenylist?: RegExp[];
+  /** External storage for sessions/nonces (default: in-memory) */
+  storage?: Storage;
 }

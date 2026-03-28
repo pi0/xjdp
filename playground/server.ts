@@ -1,3 +1,4 @@
+import { useStorage } from "nitro/storage";
 import { createServer, parseKey, generateKeyPair, serializeKey, fingerprint } from "xjdp";
 
 const serverKeyPair = await loadKeyPair("XJDP_SERVER_KEY");
@@ -8,8 +9,21 @@ const { keyPair: demoClientKeyPair, serialized: demoClientKey } =
   await loadKeyPairWithSerialized("XJDP_DEMO_KEY");
 const demoClientFp = await fingerprint(demoClientKeyPair.publicKey);
 
+const kv = useStorage("sessions");
 const rjdp = createServer({
   serverKeyPair,
+  storage: {
+    async get(key) {
+      return ((await kv.getItem(key)) as string) ?? undefined;
+    },
+    async set(key, value, ttl) {
+      // console.log(`Setting session ${key} with TTL ${ttl} ms`, value);
+      await kv.setItem(key, value, ttl ? { ttl: Math.ceil(ttl / 1000) } : undefined);
+    },
+    async delete(key) {
+      await kv.removeItem(key);
+    },
+  },
   acl: {
     "*": ["fs:read"],
     [demoClientFp]: ["eval", "exec", "fs:read", "fs:write"],
@@ -69,7 +83,7 @@ export default {
   printInstructions,
   fetch(req: Request): Response | Promise<Response> | void {
     const { pathname } = new URL(req.url);
-    console.log(`${req.method} ${pathname}`);
+    // console.log(`${req.method} ${pathname}`);
     if (pathname.includes("/.jdp")) {
       return rjdp.fetch(req);
     }

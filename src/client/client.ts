@@ -5,6 +5,7 @@ import type {
   Transport,
   Capability,
   Scope,
+  AuthResponse,
   EvalRequest,
   EvalResponse,
   ExecRequest,
@@ -26,6 +27,8 @@ export interface ClientOptions {
   transports?: Transport[];
   /** Expected server fingerprint (hex) — if set, connection fails on mismatch */
   serverFingerprint?: string;
+  /** Cached session to reuse (skips auth if still valid, falls back to fresh auth) */
+  session?: AuthResponse;
 }
 
 export class RJDPClient {

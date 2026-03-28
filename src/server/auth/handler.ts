@@ -1,6 +1,7 @@
 // Auth endpoint handlers: challenge + auth
 
 import type { Scope, ChallengeResponse, AuthResponse } from "../../types.ts";
+import type { Storage } from "../../types.ts";
 import {
   generateNonce,
   exportPublicKey,
@@ -23,10 +24,11 @@ export function createAuthContext(opts: {
   serverKeyPair: CryptoKeyPair;
   acl: Record<string, Scope[]>;
   sessionTtl?: number;
+  storage?: Storage;
 }): AuthContext {
   return {
-    nonceCache: new NonceCache(),
-    sessionStore: new SessionStore({ ttl: opts.sessionTtl }),
+    nonceCache: new NonceCache({ storage: opts.storage }),
+    sessionStore: new SessionStore({ ttl: opts.sessionTtl, storage: opts.storage }),
     serverKeyPair: opts.serverKeyPair,
     acl: opts.acl,
   };
@@ -35,7 +37,7 @@ export function createAuthContext(opts: {
 /** GET /.jdp/challenge */
 export async function handleChallenge(ctx: AuthContext): Promise<Response> {
   const nonce = generateNonce();
-  ctx.nonceCache.issue(nonce);
+  await ctx.nonceCache.issue(nonce);
 
   const serverPubJwk = await exportPublicKey(ctx.serverKeyPair.publicKey);
   const body: ChallengeResponse = {
@@ -64,7 +66,7 @@ export async function handleAuth(ctx: AuthContext, request: Request): Promise<Re
   }
 
   // Validate nonce
-  if (!ctx.nonceCache.consume(body.nonce)) {
+  if (!(await ctx.nonceCache.consume(body.nonce))) {
     return Response.json(
       { code: "INVALID_NONCE", message: "Nonce is invalid, expired, or already used" },
       { status: 401 },
@@ -114,7 +116,7 @@ export async function handleAuth(ctx: AuthContext, request: Request): Promise<Re
 
   // Create session
   const ip = (request as unknown as { ip?: string }).ip ?? "";
-  const session = ctx.sessionStore.create(fp, scopes, ip);
+  const session = await ctx.sessionStore.create(fp, scopes, ip);
   const result: AuthResponse = {
     sessionId: session.id,
     ip: session.ip,
@@ -126,7 +128,7 @@ export async function handleAuth(ctx: AuthContext, request: Request): Promise<Re
 }
 
 /** Extract and validate session from request headers or query param */
-export function getSession(ctx: AuthContext, request: Request) {
+export async function getSession(ctx: AuthContext, request: Request) {
   const authHeader = request.headers.get("authorization");
   let sessionId: string | undefined;
   if (authHeader?.startsWith("RJDP-SESSION ")) {
@@ -134,5 +136,5 @@ export function getSession(ctx: AuthContext, request: Request) {
   } else {
     sessionId = new URL(request.url).searchParams.get("session") ?? undefined;
   }
-  return sessionId ? ctx.sessionStore.get(sessionId) : undefined;
+  return sessionId ? await ctx.sessionStore.get(sessionId) : undefined;
 }

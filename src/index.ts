@@ -1,6 +1,7 @@
 // Server
 export { createServer } from "./server/handler.ts";
 export type { ServerInstance } from "./server/handler.ts";
+export { MemoryStorage } from "./server/_storage.ts";
 
 // Client
 export { RJDPClient, RJDPError, ExecHandle } from "./client/client.ts";

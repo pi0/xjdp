@@ -30,6 +30,8 @@ export async function negotiate(
     publicKey: CryptoKey;
     transports?: Transport[];
     serverFingerprint?: string;
+    /** Cached session to reuse (skips auth if still valid on server) */
+    session?: AuthResponse;
   },
 ): Promise<NegotiateResult> {
   baseUrl = baseUrl.replace(/\/+$/, "");
@@ -46,9 +48,6 @@ export async function negotiate(
     );
   }
 
-  // 2. Authenticate
-  const auth = await authenticate(baseUrl, opts.privateKey, opts.publicKey);
-
   // 3. Pick best transport
   const preferred = opts.transports ?? ["sse", "http"];
   const available = info.transports;
@@ -57,10 +56,18 @@ export async function negotiate(
     throw new Error(`No compatible transport. Server: [${available}], Client: [${preferred}]`);
   }
 
-  // 4. Create transport
+  // 4. Try reusing existing session, fall back to fresh auth
+  let auth: AuthResponse;
+  if (opts.session && (await validateSession(baseUrl, opts.session.sessionId))) {
+    auth = opts.session;
+  } else {
+    auth = await authenticate(baseUrl, opts.privateKey, opts.publicKey);
+  }
+
+  // 5. Create transport
   const transport = createTransport(pick, baseUrl, auth.sessionId);
 
-  // 5. Connect (SSE needs to establish the stream)
+  // 6. Connect (SSE needs to establish the stream)
   if (transport instanceof SSETransport) {
     await transport.connect();
   }
@@ -74,6 +81,27 @@ export async function negotiate(
     capabilities: info.capabilities,
     expiresAt: auth.expiresAt,
   };
+}
+
+/** Validate an existing session by sending a ping via the invoke endpoint */
+async function validateSession(baseUrl: string, sessionId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${baseUrl}/.jdp/invoke?session=${encodeURIComponent(sessionId)}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        id: crypto.randomUUID(),
+        type: "ping",
+        ts: Date.now(),
+        payload: {},
+      }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.type === "pong";
+  } catch {
+    return false;
+  }
 }
 
 async function authenticate(

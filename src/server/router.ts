@@ -11,7 +11,7 @@ import type {
   CwdSetRequest,
   CwdResponse,
 } from "../types.ts";
-import type { Session } from "./auth/_session.ts";
+import type { Session, SessionStore } from "./auth/_session.ts";
 import { handleEval } from "./eval/handler.ts";
 import {
   handleExec,
@@ -47,6 +47,7 @@ function fsScope(op: FsOp): Scope {
 export interface RouterContext {
   execCtx: ExecContext;
   fsCtx: FsContext;
+  sessionStore: SessionStore;
   evalTimeout?: number;
   maxConcurrentExec?: number;
 }
@@ -136,6 +137,7 @@ export async function routeFrame(
     case "cwd.set": {
       const { path } = (frame as Frame<CwdSetRequest>).payload;
       session.cwd = path;
+      await ctx.sessionStore.save(session);
       const res: Frame<CwdResponse> = {
         id: frame.id,
         type: "cwd.res",
