@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.0.5
+
+[compare changes](https://github.com/pi0/xjdp/compare/v0.0.4...v0.0.5)
+
+### 🚀 Enhancements
+
+- Safe readonly commands ([e595dc2](https://github.com/pi0/xjdp/commit/e595dc2))
+
+### 🩹 Fixes
+
+- Fix command execs ([3e0e801](https://github.com/pi0/xjdp/commit/3e0e801))
+- Fix history ([8f7be12](https://github.com/pi0/xjdp/commit/8f7be12))
+- **sse:** Ignore empty frames ([cc09b14](https://github.com/pi0/xjdp/commit/cc09b14))
+
+### 💅 Refactors
+
+- Readonly demo ([ab6a78d](https://github.com/pi0/xjdp/commit/ab6a78d))
+
+### ❤️ Contributors
+
+- Pooya Parsa ([@pi0](https://github.com/pi0))
+
 ## v0.0.4
 
 [compare changes](https://github.com/pi0/xjdp/compare/v0.0.3...v0.0.4)
