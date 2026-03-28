@@ -47,6 +47,8 @@ const COMMANDS = [
   "quit",
 ];
 
+const MAX_HISTORY = 500;
+
 export interface ReplOptions {
   serverUrl: string;
   connectOpts: ClientOptions;
@@ -122,6 +124,7 @@ export async function startRepl(client: RJDPClient, opts: ReplOptions): Promise<
     input: stdin,
     output: stdout,
     prompt: getPrompt(),
+    historySize: MAX_HISTORY,
     completer: async (line: string): Promise<[string[], string]> => {
       if (jsMode) return [[], line];
 

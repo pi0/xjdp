@@ -130,6 +130,11 @@ function createReadlineInterface(
   const closeListeners: (() => void)[] = [];
   const sigintListeners: (() => void)[] = [];
 
+  // In-memory history
+  const history: string[] = [];
+  let historyIndex = -1;
+  let savedLine = "";
+
   let lineResolve: ((result: IteratorResult<string>) => void) | null = null;
   let promptVisible = false;
   const pendingLines: string[] = [];
@@ -142,6 +147,29 @@ function createReadlineInterface(
       // Escape sequences (arrow keys, etc.)
       if (data[i] === "\x1B" && data[i + 1] === "[") {
         const seq = data[i + 2];
+        if (seq === "A" || seq === "B") {
+          // Up/Down arrow — history navigation
+          const newIndex =
+            seq === "A"
+              ? Math.min(historyIndex + 1, history.length - 1)
+              : Math.max(historyIndex - 1, -1);
+          if (newIndex !== historyIndex) {
+            if (historyIndex === -1) savedLine = line;
+            historyIndex = newIndex;
+            const newLine = historyIndex === -1 ? savedLine : history[historyIndex]!;
+            // Clear current line and write new one
+            if (cursor > 0) xterm.write(`\x1B[${cursor}D`);
+            xterm.write(" ".repeat(line.length) + "\b".repeat(line.length));
+            line = newLine;
+            cursor = line.length;
+            xterm.write(line);
+            rl.line = line;
+            rl.cursor = cursor;
+            for (const fn of keypressListeners) fn();
+          }
+          i += 3;
+          continue;
+        }
         if (seq === "D") {
           // Left arrow
           if (cursor > 0) {
@@ -189,6 +217,11 @@ function createReadlineInterface(
       if (ch === "\r" || ch === "\n") {
         xterm.write("\r\n");
         const submitted = line;
+        if (submitted.trim() && history[0] !== submitted) {
+          history.unshift(submitted);
+        }
+        historyIndex = -1;
+        savedLine = "";
         line = "";
         cursor = 0;
         promptVisible = false;
