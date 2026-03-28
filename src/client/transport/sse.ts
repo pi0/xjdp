@@ -10,6 +10,7 @@ const FRAME_TYPES = [
   "exec.exit",
   "fs.res",
   "cwd.res",
+  "sysinfo.res",
   "pong",
   "error",
   "connected",

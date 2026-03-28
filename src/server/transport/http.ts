@@ -59,7 +59,7 @@ async function handleBufferedExec(
           }),
         );
       }
-    }, 300_000); // 5 min max for HTTP transport
+    }, 10_000);
 
     routeFrame(frame, session, ctx, {
       onStdout: (f: Frame<ExecStdout>) => {
@@ -89,6 +89,13 @@ async function handleBufferedExec(
         };
         resolve(Response.json(exitFrame));
       },
+    }).then((result) => {
+      // routeFrame may return an error (e.g. FORBIDDEN) without calling onExit
+      if (result.response) {
+        clearTimeout(timeout);
+        buffer.done = true;
+        resolve(Response.json(result.response));
+      }
     });
   });
 }

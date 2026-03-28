@@ -10,6 +10,7 @@ const { stdin, stdout, stderr } = (globalThis.process?.getBuiltinModule?.("node:
 const { parseArgs } = (globalThis.process?.getBuiltinModule?.("node:util") ||
   {}) as typeof import("node:util");
 import { RJDPClient, type ClientOptions } from "../client/client.ts";
+import type { Transport } from "../types.ts";
 import { generateKeyPair, serializeKey, fingerprint, parseKey } from "../client/_crypto.ts";
 import { dim, bold, green, yellow, cyan, red, formatJS } from "./_format.ts";
 import {
@@ -268,6 +269,7 @@ export interface MainOptions {
   url?: string;
   fingerprint?: string;
   key?: string;
+  transport?: string;
 }
 
 export async function main(opts?: MainOptions) {
@@ -276,6 +278,7 @@ export async function main(opts?: MainOptions) {
       url: { type: "string", short: "u" },
       fingerprint: { type: "string", short: "f" },
       key: { type: "string", short: "k" },
+      transport: { type: "string", short: "t" },
       help: { type: "boolean", short: "h" },
     },
     strict: false,
@@ -304,6 +307,15 @@ export async function main(opts?: MainOptions) {
     (typeof args.fingerprint === "string" ? args.fingerprint : undefined) ??
     process.env.XJDP_FINGERPRINT;
 
+  const transport =
+    opts?.transport ??
+    (typeof args.transport === "string" ? args.transport : undefined) ??
+    process.env.XJDP_TRANSPORT;
+
+  const transports = transport
+    ? (transport.split(",") as Transport[])
+    : undefined;
+
   const keyJwk =
     opts?.key ?? (typeof args.key === "string" ? args.key : undefined) ?? process.env.XJDP_KEY;
 
@@ -328,7 +340,7 @@ export async function main(opts?: MainOptions) {
   let client: RJDPClient;
   const t0 = performance.now();
   try {
-    client = await RJDPClient.connect(serverUrl, { privateKey, publicKey, serverFingerprint });
+    client = await RJDPClient.connect(serverUrl, { privateKey, publicKey, serverFingerprint, transports });
   } catch (err) {
     stderr.write(red(`Connection failed: ${err instanceof Error ? err.message : err}\n`));
     process.exit(1);
@@ -341,12 +353,17 @@ export async function main(opts?: MainOptions) {
   } catch {}
   let sys: SystemInfo | undefined;
   try {
-    const { result } = await client.eval(SYSTEM_INFO_EVAL);
-    sys = result as SystemInfo;
-    if (sys?.home) setHome(sys.home);
-  } catch {}
+    sys = await client.sysinfo();
+  } catch {
+    // Fallback to eval for older servers without sysinfo frame
+    try {
+      const { result } = await client.eval(SYSTEM_INFO_EVAL);
+      sys = result as SystemInfo;
+    } catch {}
+  }
+  if (sys?.home) setHome(sys.home);
 
-  const connectOpts = { privateKey, publicKey, serverFingerprint };
+  const connectOpts = { privateKey, publicKey, serverFingerprint, transports };
   const connectionInfo = { fp, latency, sys };
 
   // Non-interactive: run the command from args and exit

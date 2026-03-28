@@ -2,6 +2,7 @@
 
 const { stdout } = (globalThis.process?.getBuiltinModule?.("node:process") ||
   {}) as typeof import("node:process");
+import type { SysinfoResponse } from "../types.ts";
 import type { RJDPClient } from "../client/client.ts";
 import { dim, bold, green, cyan, magenta } from "./_format.ts";
 
@@ -14,21 +15,7 @@ export const BANNER = `
  ╚═╝  ╚═╝ ╚════╝ ╚═════╝ ╚═╝
 `;
 
-export interface SystemInfo {
-  runtime: string;
-  version: string;
-  os: string;
-  arch: string;
-  hostname: string;
-  uptime: string;
-  cpus: number;
-  memFree: string;
-  memTotal: string;
-  diskFree: string;
-  diskTotal: string;
-  cwd: string;
-  home: string;
-}
+export type SystemInfo = SysinfoResponse;
 
 /** JS code to eval on the remote server to gather system info */
 export const SYSTEM_INFO_EVAL = `

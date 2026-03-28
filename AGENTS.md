@@ -27,6 +27,8 @@ src/
     │   ├── _nonce.ts           # Nonce cache (replay prevention, 30s TTL) — backed by Storage
     │   ├── _session.ts         # Session store (configurable TTL) — backed by Storage
     │   └── handler.ts          # Auth endpoints: challenge, auth, getSession
+    ├── sysinfo/
+    │   └── handler.ts          # Server-side system info (no eval permission needed)
     ├── eval/
     │   └── handler.ts          # Single-shot JS eval via AsyncFunction
     ├── exec/
@@ -41,9 +43,9 @@ src/
 
 ## Key Concepts
 
-- **Three capabilities**: `eval` (JS execution), `exec` (process spawn), `fs` (file ops)
+- **Four capabilities**: `eval` (JS execution), `exec` (process spawn), `fs` (file ops), `sysinfo` (server-gathered system info, no scope required)
 - **Two transports**: SSE (streaming) and HTTP (request/response fallback with polling)
-- **Auth**: ECDSA P-384 challenge-response with public key ACL and scoped sessions
+- **Auth**: ECDSA P-384 challenge-response with public key ACL and scoped sessions. Keys are optional — `RJDPClient.connect()` auto-generates an ephemeral key pair when none provided (for wildcard ACL / readonly access)
 - **Security**: path jail with symlink check, env denylist, nonce replay prevention, per-session rate limits
 - **Pluggable storage**: `SessionStore` and `NonceCache` are backed by a `Storage` interface (default: in-memory). For serverless/multi-instance deployments, pass a custom `Storage` via `ServerConfig.storage` (e.g., Redis, Deno KV, Netlify Blobs). The interface is `get`/`set`/`delete` with optional TTL, supporting both sync and async returns.
 
@@ -58,7 +60,7 @@ src/
 
 The `FRAME_TYPES` list in `src/client/transport/sse.ts` must include **every** event type the server can send. The `EventSource` API only dispatches events with registered listeners — unlisted types are silently dropped, causing `sendAndWait` to hang forever. The `_connectFetch` (Node.js) path parses all events from the raw stream, so missing types only break the browser `EventSource` path.
 
-Current server-sent types: `eval.res`, `exec.stdout`, `exec.stderr`, `exec.exit`, `fs.res`, `cwd.res`, `pong`, `error`, `connected`.
+Current server-sent types: `eval.res`, `exec.stdout`, `exec.stderr`, `exec.exit`, `fs.res`, `cwd.res`, `sysinfo.res`, `pong`, `error`, `connected`.
 
 ## Web Terminal (`src/cli/web.ts`)
 

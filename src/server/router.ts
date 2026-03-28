@@ -20,6 +20,7 @@ import {
   type ExecContext,
 } from "./exec/handler.ts";
 import { handleFs, type FsContext } from "./fs/handler.ts";
+import { handleSysinfo } from "./sysinfo/handler.ts";
 
 /** Maps frame types to required scopes */
 const SCOPE_MAP: Partial<Record<FrameType, Scope>> = {
@@ -155,6 +156,10 @@ export async function routeFrame(
         payload: { cwd: session.cwd },
       };
       return { response: res };
+    }
+
+    case "sysinfo.req": {
+      return { response: handleSysinfo(frame) };
     }
 
     case "ping": {

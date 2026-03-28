@@ -83,11 +83,13 @@ export async function createTerminal({ el, url, key, fingerprint, transport = "h
   });
 
   // Now safe to import CLI (reads process.getBuiltinModule at module scope)
-  const { startRepl, SYSTEM_INFO_EVAL, setCwd, setHome } = await import("xjdp/cli");
+  const { startRepl, SYSTEM_INFO_EVAL, setCwd, setHome } = await import(
+    "xjdp/cli"
+  );
   const { RJDPClient, parseKey, fingerprint: getFingerprint } = await import("xjdp");
 
-  // Connect and start REPL
-  const { privateKey, publicKey } = await parseKey(key);
+  // Connect and start REPL — if no key, client auto-generates ephemeral keys (readonly)
+  const { privateKey, publicKey } = key ? await parseKey(key) : {};
   const fp4 = fingerprint.slice(0, 4);
 
   // Restore cached session from localStorage
@@ -129,16 +131,20 @@ export async function createTerminal({ el, url, key, fingerprint, transport = "h
   } catch {}
 
   // Restore cwd from session, gather system info via eval
-  const fp = await getFingerprint(publicKey);
+  const fp = publicKey ? await getFingerprint(publicKey) : undefined;
   try {
     setCwd(await client.getCwd());
   } catch {}
   let sys;
   try {
-    const { result } = await client.eval(SYSTEM_INFO_EVAL);
-    sys = result;
-    if (sys?.home) setHome(sys.home);
-  } catch {}
+    sys = await client.sysinfo();
+  } catch {
+    try {
+      const { result } = await client.eval(SYSTEM_INFO_EVAL);
+      sys = result;
+    } catch {}
+  }
+  if (sys?.home) setHome(sys.home);
 
   await startRepl(client, {
     serverUrl: url,

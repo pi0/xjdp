@@ -85,19 +85,16 @@ npx xjdp -u http://localhost:3000 -k eyJrdHkiOiJFQyIs...
 ### Programmatic API
 
 ```ts
-import { RJDPClient, generateKeyPair, parseKey } from "xjdp";
+import { RJDPClient, parseKey } from "xjdp";
 
-// Fresh key pair (ephemeral — works with "*" wildcard ACL)
-const { privateKey, publicKey } = await generateKeyPair();
+// No key — auto-generates ephemeral key pair (readonly via "*" wildcard ACL)
+const client = await RJDPClient.connect("http://localhost:3000");
 
-// Or import a pre-shared key
-// const { privateKey, publicKey } = await parseKey("eyJrdHkiOiJFQyIs...");
-
-const client = await RJDPClient.connect("http://localhost:3000", {
-  privateKey,
-  publicKey,
-  serverFingerprint: "a3f9", // optional — prefix match
-});
+// Or with a pre-shared key for full access
+// const client = await RJDPClient.connect("http://localhost:3000", {
+//   ...await parseKey("eyJrdHkiOiJFQyIs..."),
+//   serverFingerprint: "a3f9", // optional — prefix match
+// });
 
 // Eval
 const { result } = await client.eval("process.version");

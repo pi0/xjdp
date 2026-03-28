@@ -329,11 +329,11 @@
       <div class="bottom-section">
         <hr class="divider" />
         <div class="tabs">
-          <button class="tab active" onclick="switchTab(0)">Full access (demo)</button>
+          <button class="tab full-access-only" onclick="switchTab(0)" style="display:none">Full access</button>
           <button class="tab" onclick="switchTab(1)">Read-only</button>
           <button class="tab" onclick="switchTab(2)">Programmatic</button>
         </div>
-        <div class="tab-panel active">
+        <div class="tab-panel">
           <div class="cmd">
             <code>{{ info.cmdFull }}</code>
             <button onclick="copy(this, event)">Copy</button>
@@ -346,24 +346,12 @@
           </div>
         </div>
         <div class="tab-panel">
-          <div class="code-block" id="code-snippet">
-            <button onclick="copyCode(this, event)">Copy</button><span class="k">import</span> {
-            RJDPClient, parseKey } <span class="k">from</span> <span class="s">"xjdp"</span>;
+          <div class="code-block" id="code-snippet"><button onclick="copyCode(this, event)">Copy</button><span class="k">import</span> { RJDPClient } <span class="k">from</span> <span class="s">"xjdp"</span>;
+<span class="c">// No key needed — readonly via wildcard ACL</span>
+<span class="k">const</span> <span class="v">client</span> = <span class="k">await</span> RJDPClient.<span class="f">connect</span>(<span class="s">"{{ $URL }}"</span>);
 
-            <span class="k">const</span> <span class="v">client</span> =
-            <span class="k">await</span> RJDPClient.<span class="f">connect</span>(<span class="s"
-              >"{{ $URL }}"</span
-            >, { ...<span class="k">await</span> <span class="f">parseKey</span>(<span class="s"
-              >"{{ info.demoClientKey }}"</span
-            >), <span class="v">serverFingerprint</span>:
-            <span class="s">"{{ info.serverFingerprint.slice(0, 4) }}"</span>, });
-
-            <span class="k">const</span> <span class="v">result</span> =
-            <span class="k">await</span> client.<span class="f">eval</span>(<span class="s"
-              >"1 + 1"</span
-            >); console.<span class="f">log</span>(<span class="v">result</span>);
-            <span class="c">// 2</span>
-          </div>
+<span class="k">const</span> <span class="v">entries</span> = <span class="k">await</span> client.<span class="v">fs</span>.<span class="f">list</span>(<span class="s">"."</span>);
+console.<span class="f">log</span>(<span class="v">entries</span>);</div>
         </div>
         <div class="label" style="text-align: center; margin-top: 0.75rem">Server fingerprint</div>
         <div class="fingerprint">{{ info.serverFingerprint }}</div>
@@ -488,11 +476,21 @@
     <script type="module">
       import { createTerminal } from "/terminal.mjs?3";
       const info = <?= JSON.stringify(info) ?>;
-      const transport = new URLSearchParams(location.search).get("transport") || "http";
+      const params = new URLSearchParams(location.search);
+      const transport = params.get("transport") || "http";
+      const key = params.get("key");
+      if (key) {
+        document.querySelectorAll(".full-access-only").forEach(el => {
+          el.style.display = "";
+        });
+        switchTab(0);
+      } else {
+        switchTab(1);
+      }
       createTerminal({
         el: document.getElementById("terminal"),
         url: location.origin,
-        key: info.demoClientKey,
+        key: key || undefined,
         fingerprint: info.serverFingerprint,
         transport,
       });

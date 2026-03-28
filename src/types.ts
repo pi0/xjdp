@@ -13,6 +13,8 @@ export type FrameType =
   | "cwd.get"
   | "cwd.set"
   | "cwd.res"
+  | "sysinfo.req"
+  | "sysinfo.res"
   | "ping"
   | "pong"
   | "error";
@@ -109,6 +111,24 @@ export interface CwdSetRequest {
 
 export interface CwdResponse {
   cwd: string;
+}
+
+// --- Sysinfo ---
+
+export interface SysinfoResponse {
+  runtime: string;
+  version: string;
+  os: string;
+  arch: string;
+  hostname: string;
+  uptime: string;
+  cpus: number;
+  memFree: string;
+  memTotal: string;
+  diskFree: string;
+  diskTotal: string;
+  cwd: string;
+  home: string;
 }
 
 // --- Error ---

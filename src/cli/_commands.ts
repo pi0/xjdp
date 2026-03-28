@@ -72,6 +72,10 @@ export async function handleCommand(input: string, client: RJDPClient, rl: Readl
       await handleCd(rest[0], client);
       break;
 
+    case "pwd":
+      stdout.write(cwd + "\n");
+      break;
+
     case "cat":
       if (rest.some((a) => a.startsWith("-")) || rest.length > 1) {
         await handleExec(["cat", ...rest.map(resolveArg)], client);
@@ -313,6 +317,7 @@ const HELP_ENTRIES: (HelpEntry | "")[] = [
   ["exec <file> [args]", "Execute a file on the server (streamed output)", "exec"],
   "",
   ["cd [path]", "Change remote working directory", "fs:read"],
+  ["pwd", "Print remote working directory"],
   ["ls [path]", "List directory contents", "fs:read"],
   ["cat <path>", "Read a file", "fs:read"],
   ["stat <path>", "Show file/directory info", "fs:read"],

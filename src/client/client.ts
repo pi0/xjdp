@@ -14,6 +14,7 @@ import type {
   FsResponse,
   FsListEntry,
   FsStat,
+  SysinfoResponse,
 } from "../types.ts";
 import { generateKeyPair, fingerprint, exportPublicKey } from "./_crypto.ts";
 import { negotiate, type NegotiateResult } from "./_negotiate.ts";
@@ -21,8 +22,9 @@ import type { ClientTransport, FrameHandler } from "./transport/_base.ts";
 import { HTTPTransport } from "./transport/http.ts";
 
 export interface ClientOptions {
-  privateKey: CryptoKey;
-  publicKey: CryptoKey;
+  /** ECDSA P-384 key pair — if omitted, an ephemeral pair is generated (for wildcard ACL / readonly) */
+  privateKey?: CryptoKey;
+  publicKey?: CryptoKey;
   /** Transport preference order (default: ["sse", "http"]) */
   transports?: Transport[];
   /** Expected server fingerprint (hex) — if set, connection fails on mismatch */
@@ -73,8 +75,13 @@ export class RJDPClient {
   }
 
   /** Connect to an RJDP server */
-  static async connect(url: string, opts: ClientOptions): Promise<RJDPClient> {
-    const result = await negotiate(url, opts);
+  static async connect(url: string, opts: ClientOptions = {}): Promise<RJDPClient> {
+    // Generate ephemeral key pair when none provided (readonly / wildcard ACL)
+    if (!opts.privateKey || !opts.publicKey) {
+      const kp = await generateKeyPair();
+      opts = { ...opts, privateKey: kp.privateKey, publicKey: kp.publicKey };
+    }
+    const result = await negotiate(url, opts as ClientOptions & { privateKey: CryptoKey; publicKey: CryptoKey });
     return new RJDPClient(result);
   }
 
@@ -174,6 +181,17 @@ export class RJDPClient {
       await this.fsOp({ op: "rename", from, to });
     },
   };
+
+  // --- Sysinfo ---
+
+  async sysinfo(): Promise<SysinfoResponse> {
+    const frame = this.makeFrame("sysinfo.req", {});
+    const response = await this.sendAndWait(frame);
+    if (response.type === "error") {
+      throw new RJDPError(response.payload as { code: string; message: string });
+    }
+    return response.payload as SysinfoResponse;
+  }
 
   // --- Cwd ---
 
