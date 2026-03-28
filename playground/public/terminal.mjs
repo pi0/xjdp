@@ -128,13 +128,15 @@ export async function createTerminal({ el, url, key, fingerprint }) {
     );
   } catch {}
 
-  // Gather remote system info
+  // Restore cwd from session, gather system info via eval
   const fp = await getFingerprint(publicKey);
+  try {
+    setCwd(await client.getCwd());
+  } catch {}
   let sys;
   try {
     const { result } = await client.eval(SYSTEM_INFO_EVAL);
     sys = result;
-    if (sys?.cwd) setCwd(sys.cwd);
     if (sys?.home) setHome(sys.home);
   } catch {}
 

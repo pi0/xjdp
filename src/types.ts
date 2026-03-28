@@ -10,6 +10,7 @@ export type FrameType =
   | "exec.kill"
   | "fs.req"
   | "fs.res"
+  | "cwd.get"
   | "cwd.set"
   | "cwd.res"
   | "ping"

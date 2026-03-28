@@ -72,6 +72,8 @@ export async function startRepl(client: RJDPClient, opts: ReplOptions): Promise<
     for (let attempt = 1; attempt <= 5; attempt++) {
       try {
         activeClient = await RJDPClient.connect(opts.serverUrl, opts.connectOpts);
+        // Restore cwd in the new session
+        activeClient.setCwd(getCwd()).catch(() => {});
         stderr.write(green("Reconnected.\n"));
         return true;
       } catch {
@@ -330,12 +332,14 @@ export async function main(opts?: MainOptions) {
   }
   const latency = Math.round(performance.now() - t0);
 
-  // Gather remote system info + cwd/home in a single eval
+  // Restore cwd from session, gather system info via eval
+  try {
+    setCwd(await client.getCwd());
+  } catch {}
   let sys: SystemInfo | undefined;
   try {
     const { result } = await client.eval(SYSTEM_INFO_EVAL);
     sys = result as SystemInfo;
-    if (sys?.cwd) setCwd(sys.cwd);
     if (sys?.home) setHome(sys.home);
   } catch {}
 

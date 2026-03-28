@@ -177,6 +177,15 @@ export class RJDPClient {
 
   // --- Cwd ---
 
+  async getCwd(): Promise<string> {
+    const frame = this.makeFrame("cwd.get", {});
+    const response = await this.sendAndWait(frame);
+    if (response.type === "error") {
+      throw new RJDPError(response.payload as { code: string; message: string });
+    }
+    return (response.payload as { cwd: string }).cwd;
+  }
+
   async setCwd(path: string): Promise<string> {
     const frame = this.makeFrame("cwd.set", { path });
     const response = await this.sendAndWait(frame);

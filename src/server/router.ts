@@ -134,6 +134,16 @@ export async function routeFrame(
       return { response: result };
     }
 
+    case "cwd.get": {
+      const res: Frame<CwdResponse> = {
+        id: frame.id,
+        type: "cwd.res",
+        ts: Date.now(),
+        payload: { cwd: session.cwd },
+      };
+      return { response: res };
+    }
+
     case "cwd.set": {
       const { path } = (frame as Frame<CwdSetRequest>).payload;
       session.cwd = path;
