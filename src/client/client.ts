@@ -81,7 +81,10 @@ export class RJDPClient {
       const kp = await generateKeyPair();
       opts = { ...opts, privateKey: kp.privateKey, publicKey: kp.publicKey };
     }
-    const result = await negotiate(url, opts as ClientOptions & { privateKey: CryptoKey; publicKey: CryptoKey });
+    const result = await negotiate(
+      url,
+      opts as ClientOptions & { privateKey: CryptoKey; publicKey: CryptoKey },
+    );
     return new RJDPClient(result);
   }
 

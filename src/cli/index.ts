@@ -312,9 +312,7 @@ export async function main(opts?: MainOptions) {
     (typeof args.transport === "string" ? args.transport : undefined) ??
     process.env.XJDP_TRANSPORT;
 
-  const transports = transport
-    ? (transport.split(",") as Transport[])
-    : undefined;
+  const transports = transport ? (transport.split(",") as Transport[]) : undefined;
 
   const keyJwk =
     opts?.key ?? (typeof args.key === "string" ? args.key : undefined) ?? process.env.XJDP_KEY;
@@ -340,7 +338,12 @@ export async function main(opts?: MainOptions) {
   let client: RJDPClient;
   const t0 = performance.now();
   try {
-    client = await RJDPClient.connect(serverUrl, { privateKey, publicKey, serverFingerprint, transports });
+    client = await RJDPClient.connect(serverUrl, {
+      privateKey,
+      publicKey,
+      serverFingerprint,
+      transports,
+    });
   } catch (err) {
     stderr.write(red(`Connection failed: ${err instanceof Error ? err.message : err}\n`));
     process.exit(1);

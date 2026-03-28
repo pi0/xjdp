@@ -83,9 +83,7 @@ export async function createTerminal({ el, url, key, fingerprint, transport = "h
   });
 
   // Now safe to import CLI (reads process.getBuiltinModule at module scope)
-  const { startRepl, SYSTEM_INFO_EVAL, setCwd, setHome } = await import(
-    "xjdp/cli"
-  );
+  const { startRepl, SYSTEM_INFO_EVAL, setCwd, setHome } = await import("xjdp/cli");
   const { RJDPClient, parseKey, fingerprint: getFingerprint } = await import("xjdp");
 
   // Connect and start REPL — if no key, client auto-generates ephemeral keys (readonly)

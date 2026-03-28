@@ -200,7 +200,11 @@ function scheduleVoice(channelIndex, note, time, duration, velocity = 1) {
   gain.gain.setValueAtTime(0.0001, time);
   gain.gain.exponentialRampToValueAtTime(gainValue, time + cfg.attack);
   gain.gain.setTargetAtTime(gainValue * 0.82, time + cfg.attack, Math.max(0.02, duration * 0.2));
-  gain.gain.setTargetAtTime(0.0001, time + Math.max(cfg.attack, duration - cfg.release), cfg.release / 3);
+  gain.gain.setTargetAtTime(
+    0.0001,
+    time + Math.max(cfg.attack, duration - cfg.release),
+    cfg.release / 3,
+  );
 
   if (source) {
     source.start(time);
