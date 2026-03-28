@@ -111,6 +111,7 @@ export async function createTerminal({ el, url, key, fingerprint }) {
     publicKey,
     serverFingerprint: fp4,
     session: cachedSession,
+    transports: ["http"],
   });
   const latency = Math.round(performance.now() - t0);
 
