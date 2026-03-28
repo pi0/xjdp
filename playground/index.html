@@ -415,7 +415,7 @@
       });
     </script>
     <script type="module">
-      import { toggle, isPlaying } from "/music.mjs";
+      import { toggle, isPlaying } from "/music.mjs?2";
       const btn = document.getElementById("music-toggle");
 
       function updateBtn(on) {
@@ -435,10 +435,14 @@
         document.removeEventListener("keydown", autoplay);
       }
 
+      let startingMusic = false;
       window.startMusic = () => {
-        if (!userPaused && !isPlaying()) {
+        if (!userPaused && !isPlaying() && !startingMusic) {
+          startingMusic = true;
           removeAutoplay();
-          play();
+          play().finally(() => {
+            startingMusic = false;
+          });
         }
       };
 
@@ -484,7 +488,7 @@
     <script type="module">
       import { createTerminal } from "/terminal.mjs?3";
       const info = <?= JSON.stringify(info) ?>;
-      const transport = new URLSearchParams(location.search).get("transport") || "sse";
+      const transport = new URLSearchParams(location.search).get("transport") || "http";
       createTerminal({
         el: document.getElementById("terminal"),
         url: location.origin,
