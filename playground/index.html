@@ -144,12 +144,18 @@
       .tab.active {
         color: #ededed;
       }
+      .tab:nth-child(1).active { color: #61afef; }
+      .tab:nth-child(2).active { color: #e5c07b; }
+      .tab:nth-child(3).active { color: #c678dd; }
       .tab-panel {
         display: none;
       }
       .tab-panel.active {
         display: block;
       }
+      .tab-panel:nth-child(4).active .cmd { border-color: #61afef44; }
+      .tab-panel:nth-child(5).active .cmd { border-color: #e5c07b44; }
+      .tab-panel:nth-child(6).active .code-block { border-color: #c678dd44; }
       .label {
         color: #666;
         font-size: 0.75rem;
@@ -185,6 +191,9 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      .cmd .hi-bin { color: #c678dd; }
+      .cmd .hi-flag { color: #61afef; }
+      .cmd .hi-val { color: #98c379; }
       .cmd button {
         background: transparent;
         border: 1px solid #333;
@@ -206,6 +215,47 @@
         color: #ededed;
         border-color: #ededed;
       }
+      .code-block {
+        background: #0a0a0a;
+        border: 1px solid #1a1a1a;
+        border-radius: 8px;
+        padding: 0.65rem 0.85rem;
+        font-family: "Geist Pixel Square", monospace;
+        font-size: 0.7rem;
+        color: #ededed;
+        overflow-x: auto;
+        white-space: pre;
+        line-height: 1.5;
+        position: relative;
+      }
+      .code-block button {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: transparent;
+        border: 1px solid #333;
+        border-radius: 6px;
+        color: #666;
+        cursor: pointer;
+        padding: 0.3rem 0.6rem;
+        font-family: "Geist Pixel Square", monospace;
+        font-size: 0.7rem;
+        font-weight: 500;
+        transition: all 0.15s;
+      }
+      .code-block button:hover {
+        border-color: #555;
+        color: #ededed;
+      }
+      .code-block button.copied {
+        color: #ededed;
+        border-color: #ededed;
+      }
+      .code-block .k { color: #c678dd; }
+      .code-block .s { color: #98c379; }
+      .code-block .c { color: #555; }
+      .code-block .f { color: #61afef; }
+      .code-block .v { color: #e5c07b; }
     </style>
   </head>
   <body>
@@ -259,6 +309,7 @@
         <div class="tabs">
           <button class="tab active" onclick="switchTab(0)">Full access (demo)</button>
           <button class="tab" onclick="switchTab(1)">Read-only</button>
+          <button class="tab" onclick="switchTab(2)">Programmatic</button>
         </div>
         <div class="tab-panel active">
           <div class="cmd">
@@ -271,6 +322,17 @@
             <code>{{ info.cmdReadonly }}</code>
             <button onclick="copy(this, event)">Copy</button>
           </div>
+        </div>
+        <div class="tab-panel">
+          <div class="code-block" id="code-snippet"><button onclick="copyCode(this, event)">Copy</button><span class="k">import</span> { RJDPClient, parseKey } <span class="k">from</span> <span class="s">"xjdp"</span>;
+
+<span class="k">const</span> <span class="v">client</span> = <span class="k">await</span> RJDPClient.<span class="f">connect</span>(<span class="s">"{{ $URL }}"</span>, {
+  ...<span class="k">await</span> <span class="f">parseKey</span>(<span class="s">"{{ info.demoClientKey }}"</span>),
+  <span class="v">serverFingerprint</span>: <span class="s">"{{ info.serverFingerprint.slice(0, 4) }}"</span>,
+});
+
+<span class="k">const</span> <span class="v">result</span> = <span class="k">await</span> client.<span class="f">eval</span>(<span class="s">"1 + 1"</span>);
+console.<span class="f">log</span>(<span class="v">result</span>); <span class="c">// 2</span></div>
         </div>
         <div class="label" style="text-align: center; margin-top: 0.75rem">Server fingerprint</div>
         <div class="fingerprint">{{ info.serverFingerprint }}</div>
@@ -296,6 +358,24 @@
           btn.classList.remove("copied");
         }, 1500);
       }
+      function copyCode(btn, e) {
+        if (e) e.stopPropagation();
+        const block = btn.closest(".code-block");
+        const text = block.textContent.replace(/^Copy/, "").trimStart();
+        navigator.clipboard.writeText(text);
+        if (window.startMusic) window.startMusic();
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = "Copy";
+          btn.classList.remove("copied");
+        }, 1500);
+      }
+      document.querySelectorAll(".cmd code").forEach((el) => {
+        el.innerHTML = el.textContent
+          .replace(/^(\S+)\s+(\S+)/, '<span class="hi-bin">$1 $2</span>')
+          .replace(/(-\w)\s+(\S+)/g, '<span class="hi-flag">$1</span> <span class="hi-val">$2</span>');
+      });
       document.querySelectorAll(".cmd").forEach((el) => {
         el.addEventListener("click", () => copy(el.querySelector("button")));
       });
