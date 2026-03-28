@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
+    />
     <title>XJDP Playground</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <script type="importmap">
@@ -31,6 +34,11 @@
         padding: 0;
         box-sizing: border-box;
       }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
       body {
         background: #000;
         color: #ededed;
@@ -38,13 +46,12 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 100vh;
         padding: 2rem;
       }
       .card {
         max-width: 720px;
         width: 100%;
-        height: 100%;
+        height: calc(100% - var(--vkb-h, 0px));
         display: flex;
         flex-direction: column;
         container-type: inline-size;
@@ -62,15 +69,26 @@
       }
       @media (max-width: 480px) {
         body {
-          padding: 1rem;
+          padding: 0;
           align-items: flex-start;
+        }
+        .card {
+          padding: 0.35rem 0.5rem 0;
         }
         .banner {
           font-size: min(0.35rem, 1.7cqi);
-          margin-bottom: 1rem;
+          margin-bottom: 0.5rem;
+          padding: 0 0.5rem;
         }
         .divider {
-          margin: 1rem 0;
+          margin: 0.35rem 0;
+        }
+        #terminal {
+          border-left: none !important;
+          border-right: none !important;
+        }
+        .card.vkb-open .bottom-section {
+          display: none;
         }
       }
       .subtitle {
@@ -232,30 +250,31 @@
           width: 100%;
           flex: 1;
           min-height: 0;
-          border-radius: 8px;
           overflow: hidden;
           border: 1px solid #1a1a1a;
         "
       ></div>
-      <hr class="divider" />
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab(0)">Full access (demo)</button>
-        <button class="tab" onclick="switchTab(1)">Read-only</button>
-      </div>
-      <div class="tab-panel active">
-        <div class="cmd">
-          <code>{{ info.cmdFull }}</code>
-          <button onclick="copy(this, event)">Copy</button>
+      <div class="bottom-section">
+        <hr class="divider" />
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab(0)">Full access (demo)</button>
+          <button class="tab" onclick="switchTab(1)">Read-only</button>
         </div>
-      </div>
-      <div class="tab-panel">
-        <div class="cmd">
-          <code>{{ info.cmdReadonly }}</code>
-          <button onclick="copy(this, event)">Copy</button>
+        <div class="tab-panel active">
+          <div class="cmd">
+            <code>{{ info.cmdFull }}</code>
+            <button onclick="copy(this, event)">Copy</button>
+          </div>
         </div>
+        <div class="tab-panel">
+          <div class="cmd">
+            <code>{{ info.cmdReadonly }}</code>
+            <button onclick="copy(this, event)">Copy</button>
+          </div>
+        </div>
+        <div class="label" style="text-align: center; margin-top: 0.75rem">Server fingerprint</div>
+        <div class="fingerprint">{{ info.serverFingerprint }}</div>
       </div>
-      <div class="label" style="text-align: center; margin-top: 0.75rem">Server fingerprint</div>
-      <div class="fingerprint">{{ info.serverFingerprint }}</div>
     </div>
     <script>
       function switchTab(i) {
@@ -349,7 +368,7 @@
       window.addEventListener("focus", handleFocusGained);
     </script>
     <script type="module">
-      import { createTerminal } from "/terminal.mjs";
+      import { createTerminal } from "/terminal.mjs?3";
       const info = <?= JSON.stringify(info) ?>;
       createTerminal({
         el: document.getElementById("terminal"),

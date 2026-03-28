@@ -16,9 +16,11 @@ export async function createTerminal({ el, url, key, fingerprint }) {
     document.head.appendChild(link);
   }
 
+  const isMobile = "ontouchstart" in window;
+
   const term = new Terminal({
     cursorBlink: true,
-    fontSize: 13,
+    fontSize: isMobile ? 11 : 13,
     theme: {
       background: "#0a0a0a",
       foreground: "#ededed",
@@ -32,10 +34,37 @@ export async function createTerminal({ el, url, key, fingerprint }) {
   term.loadAddon(new WebLinksAddon());
   term.open(el);
   fitAddon.fit();
-  term.focus();
+
+  // On mobile: don't auto-focus (prevents keyboard popping up on every tap)
+  if (!isMobile) {
+    term.focus();
+  }
 
   const ro = new ResizeObserver(() => fitAddon.fit());
   ro.observe(el);
+
+  // Mobile: custom virtual keyboard (no OS keyboard)
+  if (isMobile) {
+    const textarea = el.querySelector("textarea.xterm-helper-textarea");
+    // Prevent xterm from ever opening the OS keyboard
+    if (textarea) textarea.setAttribute("readonly", "");
+
+    const { createKeyboard } = await import("./_keyboard.mjs");
+    const card = el.closest(".card");
+    const kb = await createKeyboard(term);
+
+    const _show = kb.show.bind(kb);
+    const _hide = kb.hide.bind(kb);
+    kb.show = () => { _show(); card?.classList.add("vkb-open"); fitAddon.fit(); };
+    kb.hide = () => { _hide(); card?.classList.remove("vkb-open"); fitAddon.fit(); };
+
+    document.body.appendChild(kb.el);
+
+    // Tap terminal to show keyboard
+    el.addEventListener("pointerdown", () => {
+      if (!kb.visible) kb.show();
+    });
+  }
 
   // Install polyfill before importing CLI modules
   const { installWebPolyfill } = await import("xjdp/cli/web");
